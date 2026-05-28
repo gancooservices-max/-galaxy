@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LUMORA — Interactive 3D Sky Map</title>
+  <meta name="description" content="Explore the night sky in real-time 3D. Discover thousands of real stars with LUMORA — an interactive astronomy web app powered by WebGL." />
+  <meta name="keywords" content="star map, sky map, astronomy, 3D stars, interactive space, constellations, night sky" />
+  <meta property="og:title" content="StarVoyager — Interactive 3D Sky Map" />
+  <meta property="og:description" content="Explore 5000+ real stars in an immersive 3D night sky experience." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/style.css" />
+  <script>
+    window.onerror = function(msg, url, lineNo, columnNo, error) {
+      const errDiv = document.createElement('div');
+      errDiv.style.cssText = 'position:fixed;top:0;left:0;z-index:9999;background:red;color:white;padding:10px;font-family:monospace;max-width:100%;word-wrap:break-word;';
+      errDiv.textContent = 'ERROR: ' + msg + '\n' + (error && error.stack ? error.stack : '');
+      document.body.appendChild(errDiv);
+      return false;
+    };
+    window.onunhandledrejection = function(event) {
+      const errDiv = document.createElement('div');
+      errDiv.style.cssText = 'position:fixed;top:50px;left:0;z-index:9999;background:red;color:white;padding:10px;font-family:monospace;max-width:100%;word-wrap:break-word;';
+      errDiv.textContent = 'PROMISE REJECTION: ' + (event.reason ? (event.reason.stack || event.reason) : event);
+      document.body.appendChild(errDiv);
+    };
+  </script>
+  <!-- Satellite.js for real-time orbits -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/satellite.js/4.1.4/satellite.min.js"></script>
+</head>
+<body>
+  <!-- Canvas Container -->
+  <div id="canvas-container"></div>
+
+  <!-- Header -->
+  <header id="app-header">
+    <div class="header-left">
+      <div class="logo">
+        <img src="/logo.png" alt="LUMORA Logo" class="logo-icon" style="height: 28px; width: 28px; border-radius: 4px; vertical-align: middle;">
+        <span class="logo-text">LUMORA</span>
+      </div>
+    </div>
+    <div class="header-center">
+      <div class="search-wrapper" id="search-wrapper">
+        <span class="search-icon">✨</span>
+        <input 
+          type="text" 
+          id="search-input" 
+          placeholder="Search stars..." 
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <kbd class="search-shortcut">⌘K</kbd>
+        <div id="search-dropdown" class="search-dropdown hidden"></div>
+      </div>
+      
+      <div class="search-wrapper" id="planet-search-wrapper">
+        <span class="search-icon">🪐</span>
+        <input 
+          type="text" 
+          id="planet-search-input" 
+          placeholder="Select planet..." 
+          autocomplete="off"
+          spellcheck="false"
+          readonly
+          style="cursor: pointer;"
+        />
+        <span class="search-icon-arrow">▼</span>
+        <div id="planet-search-dropdown" class="search-dropdown hidden"></div>
+      </div>
+      
+      <div class="search-wrapper" id="satellite-search-wrapper" style="margin-left: 10px;">
+        <span class="search-icon">🛰️</span>
+        <input 
+          type="text" 
+          id="satellite-search-input" 
+          placeholder="Select satellite..." 
+          autocomplete="off"
+          spellcheck="false"
+          readonly
+          style="cursor: pointer;"
+        />
+        <span class="search-icon-arrow">▼</span>
+        <div id="satellite-search-dropdown" class="search-dropdown hidden"></div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div id="star-count" class="stat-badge">
+        <span class="stat-icon">⭐</span>
+        <span id="star-count-num">0</span> stars
+      </div>
+      <button id="btn-toggle-time" class="stat-badge" style="cursor: pointer; background: rgba(255, 255, 255, 0.1);">
+        <span class="stat-icon" id="time-pause-icon">⏸️</span>
+        <span id="time-clock">Loading Time...</span>
+      </button>
+    </div>
+  </header>
+
+  
+  
+  <!-- Corner Menubar -->
+  <div id="corner-menubar" class="corner-menubar">
+    
+    <div class="menu-header">
+      <span class="menu-title">FEATURES</span>
+      <button id="menu-collapse-btn" title="Toggle Menu">▼</button>
+    </div>
+
+    <div id="corner-menubar-items">
+    <button id="menu-btn-chandra" class="menu-btn">
+      <span class="menu-icon">🚀</span>
+      <span>Chandrayaan</span>
+    </button>
+    </div>
+  </div>
+
+  <!-- Side Panel -->
+  <aside id="side-panel" class="side-panel hidden">
+    <button id="side-panel-close" class="panel-close-btn" title="Close">✕</button>
+    <div class="panel-inner">
+      <div class="panel-star-visual" id="panel-visual-area">
+        <div id="panel-star-glow" class="star-glow-display"></div>
+        <div id="panel-sat-img-card" class="sat-img-card hidden">
+          <img id="panel-planet-img" class="planet-img-display satellite-img" src="" alt="Satellite View" />
+        </div>
+        <img id="panel-planet-img-planet" class="planet-img-display hidden" src="" alt="Planet View" />
+      </div>
+      <div class="panel-header">
+        <h1 id="panel-star-name" class="panel-title">—</h1>
+        <div class="panel-badges">
+          <span id="panel-type-badge" class="type-badge">—</span>
+          <span id="panel-mag-badge" class="mag-badge">mag —</span>
+        </div>
+      </div>
+      <div class="panel-divider" id="star-planet-divider"></div>
+      <div class="panel-stats" id="star-planet-stats">
+        <div class="stat-row star-stat">
+          <span class="stat-label">Distance</span>
+          <span id="panel-dist" class="stat-value">—</span>
+        </div>
+        <div class="stat-row star-stat">
+          <span class="stat-label">Right Ascension</span>
+          <span id="panel-ra" class="stat-value">—</span>
+        </div>
+        <div class="stat-row star-stat">
+          <span class="stat-label">Declination</span>
+          <span id="panel-dec" class="stat-value">—</span>
+        </div>
+        <div class="stat-row star-stat">
+          <span class="stat-label">Spectral Type</span>
+          <span id="panel-spectral" class="stat-value">—</span>
+        </div>
+        <div class="stat-row star-stat">
+          <span class="stat-label">Temperature</span>
+          <span id="panel-temp" class="stat-value">—</span>
+        </div>
+        <div class="stat-row star-stat">
+          <span class="stat-label">Magnitude</span>
+          <span id="panel-magnitude" class="stat-value">—</span>
+        </div>
+        <!-- Planet Specific Rows -->
+        <div class="stat-row planet-stat hidden">
+          <span class="stat-label">Mass</span>
+          <span id="panel-mass" class="stat-value">—</span>
+        </div>
+        <div class="stat-row planet-stat hidden">
+          <span class="stat-label">Radius</span>
+          <span id="panel-radius" class="stat-value">—</span>
+        </div>
+        <div class="stat-row planet-stat hidden">
+          <span class="stat-label">Gravity</span>
+          <span id="panel-gravity" class="stat-value">—</span>
+        </div>
+        <div class="stat-row planet-stat hidden">
+          <span class="stat-label">Orbital Period</span>
+          <span id="panel-orbit" class="stat-value">—</span>
+        </div>
+        <div class="stat-row planet-stat hidden">
+          <span class="stat-label">Day Length</span>
+          <span id="panel-day" class="stat-value">—</span>
+        </div>
+      </div>
+      <div class="panel-divider sat-stat hidden"></div>
+      <div class="panel-stats sat-stat hidden">
+        <h3 style="margin-top:0; color:#fff; font-size:14px; margin-bottom: 8px;">Basic Information</h3>
+        <div class="stat-row">
+          <span class="stat-label">Satellite Name</span>
+          <span id="panel-sat-name" class="stat-value">—</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Country/Org.</span>
+          <span id="panel-sat-country" class="stat-value">—</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Launch Date</span>
+          <span id="panel-sat-launch" class="stat-value">—</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Mission Type</span>
+          <span id="panel-sat-purpose" class="stat-value">—</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Status</span>
+          <span id="panel-sat-status" class="stat-value">—</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Distance from Earth</span>
+          <span id="panel-sat-dist" class="stat-value">—</span>
+        </div>
+      </div>
+      <div class="panel-divider"></div>
+      <div class="panel-description" id="panel-description"></div>
+      <a id="panel-wiki-link" class="panel-wiki-btn hidden" href="#" target="_blank">
+        📖 Read more on Wikipedia
+      </a>
+      <div style="display: flex; gap: 10px; margin-top: 15px;">
+        <button class="panel-fly-btn" id="panel-fly-btn" style="flex: 1;">
+          <span>🚀</span> Fly To
+        </button>
+        <button class="panel-fly-btn hidden" id="panel-view-star-btn" style="flex: 1; background: rgba(255, 200, 100, 0.15); border-color: rgba(255, 200, 100, 0.4);">
+          <span>☀️</span> View 3D Star
+        </button>
+      </div>
+      <div id="panel-telescope-controls" class="hidden" style="display: flex; gap: 10px; margin-top: 10px;">
+        <button class="panel-fly-btn" id="panel-zoom-in-btn" style="flex: 1; background: rgba(100, 200, 255, 0.15); border-color: rgba(100, 200, 255, 0.4);">
+          <span>🔍+</span> Zoom In
+        </button>
+        <button class="panel-fly-btn" id="panel-zoom-out-btn" style="flex: 1; background: rgba(100, 200, 255, 0.15); border-color: rgba(100, 200, 255, 0.4);">
+          <span>🔍-</span> Zoom Out
+        </button>
+      </div>
+      <div id="panel-supernova-controls" class="hidden" style="margin-top: 10px;">
+        <button class="panel-fly-btn" id="panel-supernova-btn" style="width: 100%; background: rgba(255, 50, 50, 0.18); border-color: rgba(255, 50, 50, 0.45); color: #ff9999; font-weight: bold; box-shadow: 0 0 10px rgba(255, 50, 50, 0.1);">
+          <span>💥</span> Trigger Supernova
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Selection Reticle -->
+  <div id="selection-reticle" class="selection-reticle hidden">
+    <div class="reticle-corner tl"></div>
+    <div class="reticle-corner tr"></div>
+    <div class="reticle-corner bl"></div>
+    <div class="reticle-corner br"></div>
+  </div>
+
+  <!-- Tooltip -->
+  <!-- Tooltip -->
+  <div id="star-tooltip" class="star-tooltip hidden">
+    <div class="tooltip-name" id="tooltip-name">—</div>
+    <div class="tooltip-details">
+      <span class="tooltip-detail" id="tooltip-mag">—</span>
+      <span class="tooltip-sep">·</span>
+      <span class="tooltip-detail" id="tooltip-dist">—</span>
+      <span class="tooltip-sep">·</span>
+      <span class="tooltip-detail" id="tooltip-temp">—</span>
+    </div>
+    <div class="tooltip-type" id="tooltip-type">—</div>
+  </div>
+
+  <!-- Spaceship Cockpit HUD -->
+  <div id="spaceship-cockpit" class="spaceship-cockpit hidden">
+    <div class="cockpit-glass"></div>
+    <div class="cockpit-hud">
+      <!-- Left Panel -->
+      <div class="hud-panel hud-left">
+        <div class="hud-box">
+          <div class="hud-title">SYSTEMS</div>
+          <div class="hud-bar"><div class="hud-bar-fill" style="width: 100%;"></div></div>
+          <div class="hud-text">SHIELDS: OPTIMAL</div>
+          <div class="hud-text">GRAVITY: 1.0G</div>
+        </div>
+      </div>
+      
+      <!-- Center Console -->
+      <div class="hud-center">
+        <div class="crosshair-wrapper">
+          <div class="crosshair"></div>
+          <div class="crosshair-ring"></div>
+        </div>
+      </div>
+
+      <!-- Right Panel -->
+      <div class="hud-panel hud-right">
+        <div class="hud-box">
+          <div class="hud-title">NAVIGATION</div>
+          <div class="hud-text">DRIVE: IMPULSE</div>
+          <div class="hud-grid"></div>
+        </div>
+      </div>
+      
+      <!-- Top / Bottom elements -->
+      <div class="hud-top">LUMORA STARSHIP HUD v2.0</div>
+      <div class="hud-bottom">
+        <div class="speed-indicator">
+          <span class="warp-label">WARP DRIVE:</span> <span class="warp-status">STANDBY</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Time Controller Widget -->
+  <div id="time-controller" class="time-controller">
+    <div class="time-display-row">
+      <span class="time-clock" id="time-clock">2026-05-20 18:24:00</span>
+    </div>
+    
+    <div class="time-controls-panel" id="time-controls-panel">
+      <button id="btn-time-rewind" class="time-btn" title="Reverse / Slow down">⏪</button>
+      <button id="btn-time-play" class="time-btn" title="Pause / Play">⏸️</button>
+      <button id="btn-time-forward" class="time-btn" title="Fast Forward">⏩</button>
+      <button id="btn-time-now" class="time-btn" title="Reset to Current Time">now</button>
+    </div>
+  </div>
+
+  <!-- Bottom Controls -->
+  <nav id="bottom-controls" class="bottom-controls">
+    <button id="btn-vr" class="ctrl-btn" title="Toggle VR Mode">
+      <span class="ctrl-icon">🥽</span>
+      <span class="ctrl-label">VR Mode</span>
+    </button>
+    <button id="btn-reset" class="ctrl-btn" title="Reset View">
+      <span class="ctrl-icon">⟳</span>
+      <span class="ctrl-label">Reset View</span>
+    </button>
+    <button id="btn-autorotate" class="ctrl-btn" title="Toggle Auto-Rotate">
+      <span class="ctrl-icon">↻</span>
+      <span class="ctrl-label">Auto Rotate</span>
+    </button>
+    <button id="btn-grid" class="ctrl-btn" title="Toggle Celestial Grid">
+      <span class="ctrl-icon">🌐</span>
+      <span class="ctrl-label">Celestial Grid</span>
+    </button>
+    <button id="btn-stars" class="ctrl-btn active" title="Toggle Background Stars">
+      <span class="ctrl-icon">⭐</span>
+      <span class="ctrl-label">Hide Stars</span>
+    </button>
+    <button id="btn-deselect" class="ctrl-btn" title="Deselect Target" style="display: none;">
+      <span class="ctrl-icon">✖</span>
+      <span class="ctrl-label">Deselect</span>
+    </button>
+    <button id="btn-mission" class="ctrl-btn" title="Launch Chandrayaan Mission" style="display: none;">
+      <span class="ctrl-icon">🚀</span>
+      <span class="ctrl-label">Chandrayaan</span>
+    </button>
+    <div class="ctrl-divider"></div>
+    <div class="fps-counter" id="fps-counter">60 fps</div>
+  </nav>
+
+  <!-- Navigation Hint -->
+  <div id="nav-hint" class="nav-hint">
+    <div class="hint-item"><span class="hint-key">Drag</span> Rotate</div>
+    <div class="hint-item"><span class="hint-key">Scroll</span> Zoom</div>
+    <div class="hint-item"><span class="hint-key">Click</span> Explore</div>
+  </div>
+
+  <!-- Loading Screen -->
+  <div id="loading-screen" class="loading-screen">
+    <div class="loading-inner">
+      <div class="loading-logo">
+        <img src="/logo.png" alt="LUMORA Logo" class="loading-star" style="height: 48px; width: 48px; border-radius: 6px; margin-bottom: 8px;">
+        <span class="loading-brand">LUMORA</span>
+      </div>
+      <div class="loading-bar-wrap">
+        <div class="loading-bar" id="loading-bar"></div>
+      </div>
+      <div id="loading" class="loading">Initializing LUMORA Space Engine...</div>
+    </div>
+  </div>
+
+  <!-- Map Modal -->
+  <div id="map-modal" class="map-modal hidden">
+    <div class="map-header">
+      <h2>Select Your Location on Earth</h2>
+      <button id="close-map-btn" class="close-map-btn">&times;</button>
+    </div>
+    <div class="map-container" id="map-container">
+      <img src="/textures/earth_color.jpg" id="earth-map-img" alt="Earth Map" draggable="false">
+      <div id="map-pin" class="map-pin hidden">📍</div>
+    </div>
+    <div class="map-footer">
+      <span id="map-coords" class="map-coords">Lat: --, Lon: --</span>
+      <button id="btn-cancel-map" class="secondary-btn">Cancel</button>
+      <button id="btn-teleport" class="primary-btn" disabled>View Sky from Here</button>
+    </div>
+  </div>
+
+  <!-- Planetarium UI Removed -->
+  <!-- Celestial Info Panel (For clicks in Earth view and space) -->
+  <div id="celestial-info-panel">
+    <div class="panel-glow"></div>
+    <button id="celestial-info-close" class="celestial-close-btn">&times;</button>
+    <div class="panel-content">
+      <div id="celestial-info-name">Name</div>
+      <div id="celestial-info-type">Type</div>
+      
+      <div class="info-row-container">
+        <div class="info-row">
+          <span class="info-label">Distance</span>
+          <span id="celestial-info-dist" class="info-value">-</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Magnitude</span>
+          <span id="celestial-info-mag" class="info-value">-</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  
+  <!-- HUD Targeting Layer -->
+  <div id="hud-targeting-layer" class="hud-targeting-layer"></div>
+
+  <!-- Main script -->
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
