@@ -266,10 +266,16 @@ export class StarRenderer {
        );
        
        ss.mesh.position.copy(this.camera.position).add(offset);
+       // Completely random direction for earth-view streaks
        ss.dir.set(Math.random()-0.5, Math.random()-0.5, Math.random()-0.5).normalize();
        
-       const defaultDir = new THREE.Vector3(0, 0, -1);
-       ss.mesh.quaternion.setFromUnitVectors(defaultDir, ss.dir);
+       // CORRECT quaternion: tail is along -Z in local space.
+       // Tail should trail BEHIND motion, so -Z must point in -ss.dir (opposite of travel).
+       // setFromUnitVectors( (0,0,-1), -ss.dir ) achieves this.
+       ss.mesh.quaternion.setFromUnitVectors(
+         new THREE.Vector3(0, 0, -1),
+         ss.dir.clone().negate()
+       );
        
        ss.mesh.scale.set(100, 100, 100);
        ss.speed = 2800 + Math.random() * 3200;
@@ -278,33 +284,75 @@ export class StarRenderer {
        ss.delay = 10 + Math.random() * 50; // VERY rare in Earth view
     } else {
        // SPACE VIEW: Meteors buzz past the camera
-       const r = 20 + Math.random() * 60; 
+       // Pick a random spawn distance from camera (5 to 80 units)
+       const r = 5 + Math.random() * 75;
        const theta = Math.random() * Math.PI * 2;
        const phi   = Math.acos(2 * Math.random() - 1);
-       
+
        const offset = new THREE.Vector3(
          r * Math.sin(phi) * Math.cos(theta),
          r * Math.sin(phi) * Math.sin(theta),
          r * Math.cos(phi),
        );
-       
+
        if (this.camera) {
-          ss.mesh.position.copy(this.camera.position).add(offset);
-          ss.dir.copy(this.camera.getWorldDirection(new THREE.Vector3()))
-              .add(new THREE.Vector3(Math.random()-0.5, Math.random()-0.5, Math.random()-0.5))
-              .normalize();
-       } else {
-          ss.mesh.position.copy(offset);
-          ss.dir.set(Math.random()-0.5, Math.random()-0.5, Math.random()-0.5).normalize();
-       }
-       
-       const defaultDir = new THREE.Vector3(0, 0, -1);
-       ss.mesh.quaternion.setFromUnitVectors(defaultDir, ss.dir);
-       
-       ss.mesh.scale.set(1, 1, 1);
-       ss.speed = 22 + Math.random() * 26; 
-       ss.maxLife = 1.8 + Math.random() * 1.8; 
-       ss.delay = Math.random() * 5; // Frequent in space view
+         const candidatePos = this.camera.position.clone().add(offset);
+
+         // --- Planet proximity check: skip if too close to any planet ---
+         let tooCloseToPlanet = false;
+         if (this.planetMeshes) {
+           for (const pm of this.planetMeshes) {
+             if (pm.mesh && pm.mesh.position.distanceTo(candidatePos) < 30) {
+               tooCloseToPlanet = true;
+               break;
+             }
+           }
+         }
+         if (tooCloseToPlanet) {
+           // Push the meteor far from the planet — offset outward by extra 60 units
+           offset.normalize().multiplyScalar(60 + Math.random() * 40);
+           candidatePos.copy(this.camera.position).add(offset);
+         }
+
+         ss.mesh.position.copy(candidatePos);
+
+         // DIRECTION: meteor flies toward the camera with a natural spread.
+         // toCamera = unit vector from spawn point → camera.
+         // Adding spread makes it fly "past" the camera, not perfectly at it.
+         const toCamera = this.camera.position.clone().sub(candidatePos).normalize();
+         const spread = new THREE.Vector3(
+           (Math.random() - 0.5) * 0.9,
+           (Math.random() - 0.5) * 0.9,
+           (Math.random() - 0.5) * 0.9
+         );
+         ss.dir.addVectors(toCamera, spread).normalize();
+
+         // CORRECT quaternion: geometry tail is along local -Z.
+         // For tail to trail BEHIND motion, local -Z must align with -ss.dir.
+         // setFromUnitVectors( (0,0,-1), -ss.dir ) does exactly that.
+         ss.mesh.quaternion.setFromUnitVectors(
+           new THREE.Vector3(0, 0, -1),
+           ss.dir.clone().negate()
+         );
+
+         // Store spawn distance so animate loop can scale speed correctly
+         ss._spawnDist = candidatePos.distanceTo(this.camera.position);
+      } else {
+         ss.mesh.position.copy(offset);
+         ss.dir.set(Math.random()-0.5, Math.random()-0.5, Math.random()-0.5).normalize();
+         ss.mesh.quaternion.setFromUnitVectors(
+           new THREE.Vector3(0, 0, -1),
+           ss.dir.clone().negate()
+         );
+         ss._spawnDist = r;
+      }
+
+      ss.mesh.scale.set(1, 1, 1);
+      // Base speed stored — actual speed applied per-frame based on distance
+      ss._baseSpeed = 12 + Math.random() * 18;
+      ss.speed = ss._baseSpeed;
+      ss.maxLife = 2.0 + Math.random() * 2.0;
+      ss.delay = Math.random() * 5; // Frequent in space view
     }
     ss.life = ss.maxLife;
     ss.mesh.visible = true;
@@ -399,7 +447,7 @@ export class StarRenderer {
   _createControls() {
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
-    this.controls.dampingFactor = 0.05;
+    this.controls.dampingFactor = 0.18; // Higher value = zoom stops faster, less drift after scroll
     this.controls.minDistance = 5.5;
     this.controls.maxDistance = 5000000;
     this.controls.maxPolarAngle = Math.PI;
@@ -432,7 +480,6 @@ export class StarRenderer {
     // Handle zooming via FOV in modes where camera position shouldn't change
     this.renderer.domElement.addEventListener('wheel', (e) => {
       if (this.isPlanetariumMode && this.camera) {
-        // Prevent default OrbitControls zoom is handled by enableZoom=false, but we still capture the wheel
         const delta = e.deltaY > 0 ? 1.1 : 0.9;
         this.camera.fov = THREE.MathUtils.clamp(this.camera.fov * delta, 10, 165);
         this.camera.updateProjectionMatrix();
@@ -3447,7 +3494,7 @@ CSS (TIANGONG)
       if (t < 1) requestAnimationFrame(anim);
     };
     requestAnimationFrame(anim);
-    this.setAutoRotate(true);
+    // Note: autoRotate intentionally NOT enabled here — it causes unwanted drift in space/planetarium view
   }
 
 
@@ -5066,6 +5113,9 @@ CSS (TIANGONG)
   }
 
   flyTo(targetData, duration = 4000) {
+    // During an active mission, mission handles camera — don't do cinematic flight
+    if (this.missionSimulator && this.missionSimulator.active) return;
+    
     // If flying somewhere, exit telescope mode
     
     
@@ -5241,6 +5291,7 @@ CSS (TIANGONG)
   resetView() {
     this._clearSelection();
     this.isPlanetariumMode = false;
+    this.setAutoRotate(false); // Stop any auto-rotation
     
     this._clearActiveStarSystem();
     
@@ -5447,7 +5498,14 @@ CSS (TIANGONG)
 
       // ── Real-time Earth Rotation (UTC-based for correct day/night) ──
       if (this.earth) {
-        if (!(this.missionSimulator && this.missionSimulator.active && this.missionSimulator.stage < 2)) {
+        // During Chandrayaan mission, LOCK Earth rotation completely — rocket is a child of Earth
+        // so any rotation change moves the launch site and rocket with it.
+        if (this.missionSimulator && this.missionSimulator.active) {
+          // Enforce frozen angle every frame (guard against any other code changing it)
+          if (this.missionSimulator._frozenEarthRotY !== undefined) {
+            this.earth.rotation.y = this.missionSimulator._frozenEarthRotY;
+          }
+        } else {
         // Use UTC time — Earth's rotation is measured from Greenwich Meridian
         const utcMs   = this.simulationTime.getTime();
         const msInDay = 86400000.0;
@@ -5465,7 +5523,7 @@ CSS (TIANGONG)
         // GMST=0 means Greenwich faces the vernal equinox (+X in our coords).
         // So: rotation.y = -GMST_rad  ← no extra offset needed.
         // The old code had "- Math.PI" which was a 180° flip causing night/day swap!
-        if (!(this.missionSimulator && this.missionSimulator.active && this.missionSimulator.stage < 2)) { this.earth.rotation.y = -gmst_rad; }
+        this.earth.rotation.y = -gmst_rad;
         }
 
         // ── Update Sun DirectionalLight direction (FIXED) ──
@@ -5476,7 +5534,8 @@ CSS (TIANGONG)
 
       if (this.earthClouds) {
         const cloudSpeed = 0.015;
-        const scaleFactor = this.isTimePaused ? 0 : Math.min(80.0, this.timeScale);
+        // Freeze clouds during mission (Earth is frozen, clouds should be too)
+        const scaleFactor = (this.isTimePaused || (this.missionSimulator && this.missionSimulator.active)) ? 0 : Math.min(80.0, this.timeScale);
         this.earthClouds.rotation.y += cloudSpeed * delta * (scaleFactor || 1.0);
       }
       
@@ -5506,9 +5565,19 @@ CSS (TIANGONG)
           }
           
           ss.mesh.visible = true;
-          ss.mesh.position.addScaledVector(ss.dir, ss.speed * delta);
+
+          // Distance-based speed: close to camera = fast, far away = slow (parallax realism)
+          const distNow = ss.mesh.position.distanceTo(this.camera.position);
+          // Map distance 0–80 → speed multiplier 3.0–0.15
+          const speedMul = THREE.MathUtils.lerp(3.0, 0.15, Math.min(distNow / 80.0, 1.0));
+          const effectiveSpeed = (ss._baseSpeed || ss.speed) * speedMul;
+
+          ss.mesh.position.addScaledVector(ss.dir, effectiveSpeed * delta);
+
           if (ss.mesh.material && ss.mesh.material.uniforms && ss.mesh.material.uniforms.uOpacity) {
-            ss.mesh.material.uniforms.uOpacity.value = Math.max(0, ss.life / ss.maxLife) * 0.85;
+            // Distance-based fade: far meteors are much dimmer
+            const distFade = Math.max(0, 1.0 - distNow / 70.0); // fully invisible beyond 70 units
+            ss.mesh.material.uniforms.uOpacity.value = Math.max(0, ss.life / ss.maxLife) * 0.85 * distFade;
           }
         });
       }
@@ -5651,8 +5720,9 @@ CSS (TIANGONG)
 
           if (this._targetPanGoal && this.controls && !this.isFlyMode && !this._isCinematicFlight) {
             const dist = this.controls.target.distanceTo(this._targetPanGoal);
-            if (dist > 0.01) {
-              this.controls.target.lerp(this._targetPanGoal, 0.08);
+            const stopThreshold = Math.max(0.5, dist * 0.005);
+            if (dist > stopThreshold) {
+              this.controls.target.lerp(this._targetPanGoal, 0.12);
             } else {
               this.controls.target.copy(this._targetPanGoal);
               this._targetPanGoal = null;
@@ -5897,8 +5967,10 @@ CSS (TIANGONG)
       // Smooth Camera Slide towards the zoom goal (creating an immersive flight/closer movement feel)
       if (this._targetCamGoal && !this._isCinematicFlight) {
         const distToGoal = this.camera.position.distanceTo(this._targetCamGoal);
-        if (distToGoal > 0.05) {
-          this.camera.position.lerp(this._targetCamGoal, 0.08);
+        // Use a proportional threshold: stop when within 0.5% of goal distance OR less than 1 unit
+        const stopThreshold = Math.max(1.0, distToGoal * 0.005);
+        if (distToGoal > stopThreshold) {
+          this.camera.position.lerp(this._targetCamGoal, 0.15); // Faster lerp = less drift time
         } else {
           this.camera.position.copy(this._targetCamGoal);
           this._targetCamGoal = null;

@@ -115,6 +115,7 @@ async function main() {
 
   // Hover handler
   interaction.onHover = (star, x, y) => {
+    if (renderer.missionSimulator && renderer.missionSimulator.active) return;
     if (star) {
       updatePlanetRealtimeDistance(star);
       ui.showTooltip(star, x, y);
@@ -127,6 +128,7 @@ async function main() {
 
   // Click handler
   interaction.onClick = (star) => {
+    if (renderer.missionSimulator && renderer.missionSimulator.active) return;
     updatePlanetRealtimeDistance(star);
     renderer.selectStar(star);
     ui.openPanel(star);
