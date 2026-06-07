@@ -11,10 +11,12 @@ import { Interaction }     from './Interaction.js';
 import { UI }              from './UI.js';
 import { getPlanetsData } from './PlanetData.js';
 import { VRButton } from 'three/examples/jsm/webxr/VRButton.js';
+import { mountLandingPage } from './landing/index.jsx';
+
 
 async function main() {
   // ─── 1. Load star data ──────────────────────────────────────
-  const stars = await loadStarCatalog(5000);
+  const stars = await loadStarCatalog();
   const planets = getPlanetsData(new Date());
 
   // ─── 2. Initialize Renderer ─────────────────────────────────
@@ -57,33 +59,224 @@ async function main() {
 
   // ─── 4. Initialize UI ────────────────────────────────────────
   const ui = new UI();
-  ui.init(stars, planets);
+  await ui.init(stars, planets);
   ui.renderer = renderer;
+  if (ui.registeredStars) {
+    renderer.highlightRegisteredStars(ui.registeredStars);
+  }
 
-  // ─── 4.5. Default to Earth Telescope View ────────
-  setTimeout(() => {
-    const earthData = planets.find(p => p.id === 'Earth');
-    if (earthData) {
-      // Fly to Earth instantly
-      renderer.flyTo(earthData, 0);
-      
-      const startTelescope = (lat, lon) => {
-        // We wait slightly for the camera to settle at Earth
-        setTimeout(() => {
-          renderer.toggleTelescopeMode(true, {lat, lng: lon});
-        }, 100);
-      };
+  // ─── 4.5. Mount Landing Page ────────
+  const uiElements = [
+    'app-header', 'corner-menubar', 'time-controller', 'bottom-controls', 'nav-hint'
+  ];
+  
+  const handleExplore = (target) => {
+    window.dispatchEvent(new CustomEvent('stop-tracking-mystar'));
+    // Show 3D UI
+    uiElements.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = ''; // Clear inline display so CSS takes over
+    });
+    // Ensure specific elements have correct display
+    const btnToggleFeatures = document.getElementById('btn-toggle-features');
+    if (btnToggleFeatures) btnToggleFeatures.style.display = '';
 
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => startTelescope(pos.coords.latitude, pos.coords.longitude),
-          (err) => startTelescope(20.5937, 78.9629) // Default to India if denied
-        );
+    const rootEl = document.getElementById('react-root');
+    if (rootEl) {
+      rootEl.style.pointerEvents = 'none';
+      rootEl.style.display = 'none';
+    }
+
+    if (typeof target === 'string') {
+      if (target === 'Stars') {
+        renderer.resetView();
+      } else if (target === 'Earth') {
+        renderer.flyToEarth();
       } else {
-        startTelescope(20.5937, 78.9629);
+        const targetObj = renderer.planetMeshes ? renderer.planetMeshes.find(pm => pm.data.id === target) : null;
+        if (targetObj) {
+          renderer.flyTo({ isPlanet: true, mesh: targetObj.mesh, data: targetObj.data }, 3000);
+        } else {
+          renderer.resetView();
+        }
+      }
+    } else {
+      renderer.resetView();
+    }
+  };
+
+  const mountHome = () => {
+    uiElements.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+    const btnToggleFeatures = document.getElementById('btn-toggle-features');
+    if (btnToggleFeatures) btnToggleFeatures.style.display = 'none';
+
+    window.dispatchEvent(new CustomEvent('stop-tracking-mystar'));
+
+    const rootEl = document.getElementById('react-root');
+    if (rootEl) {
+      rootEl.style.pointerEvents = 'auto';
+      rootEl.style.display = 'block';
+    }
+    renderer.resetView(); // Reset the view to solar system
+    mountLandingPage('react-root', handleExplore);
+  };
+
+  // Mount initially
+  mountHome();
+
+  // Bind Home Button
+  const btnHome = document.getElementById('menu-btn-home');
+  if (btnHome) {
+    btnHome.addEventListener('click', () => {
+      // Close side panel and map modal if open
+      ui.closePanel();
+      ui.closeMapModal();
+      
+      // Collapse menu sidebar
+      if (typeof collapseMenu === 'function') {
+        collapseMenu();
+      } else {
+        const cornerMenubar = document.getElementById('corner-menubar');
+        const btnToggleFeatures = document.getElementById('btn-toggle-features');
+        if (cornerMenubar) cornerMenubar.classList.add('collapsed');
+        if (btnToggleFeatures) btnToggleFeatures.classList.remove('hidden');
+      }
+      
+      mountHome();
+    });
+  }
+
+  // Bind My Star Button
+  const btnMyStar = document.getElementById('menu-btn-mystar');
+  if (btnMyStar) {
+    btnMyStar.addEventListener('click', () => {
+      // Close side panel and map modal if open
+      ui.closePanel();
+      ui.closeMapModal();
+      
+      // Collapse menu sidebar
+      if (typeof collapseMenu === 'function') {
+        collapseMenu();
+      } else {
+        const cornerMenubar = document.getElementById('corner-menubar');
+        const btnToggleFeatures = document.getElementById('btn-toggle-features');
+        if (cornerMenubar) cornerMenubar.classList.add('collapsed');
+        if (btnToggleFeatures) btnToggleFeatures.classList.remove('hidden');
+      }
+      
+      // Make react-root visible so the portal can be seen OVER the 3D map
+      const rootEl = document.getElementById('react-root');
+      if (rootEl) {
+        rootEl.style.pointerEvents = 'auto';
+        rootEl.style.display = 'block';
+      }
+      
+      // Tell React to show the My Star Portal after a tiny delay
+      // to avoid race conditions
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('open-mystar', { detail: { source: 'galaxy' } }));
+      }, 50);
+    });
+  }
+
+  window.addEventListener('mystar-zoom-in', () => {
+    if (!renderer) return;
+    if (!renderer._active3DStar && window.isMyStarTracking && window.currentTrackedStarId) {
+      const starData = renderer.stars.find(s => String(s.id) === String(window.currentTrackedStarId) || String(s.id) === `CUST-${window.currentTrackedStarId}`);
+      if (starData) {
+        // "directly showing the 3d view"
+        renderer.viewStar3D(starData, true); // instant = true
+        
+        // "all features is visible" (restore UI)
+        return;
       }
     }
-  }, 1000);
+    renderer.zoomTowardsSelected(true);
+  });
+
+  window.addEventListener('mystar-zoom-out', () => {
+    if (!renderer) return;
+    if (!renderer._active3DStar && window.isMyStarTracking && window.currentTrackedStarId) {
+      const starData = renderer.stars.find(s => String(s.id) === String(window.currentTrackedStarId) || String(s.id) === `CUST-${window.currentTrackedStarId}`);
+      if (starData) {
+        renderer.viewStar3D(starData, true); // instant = true
+        return;
+      }
+    }
+    renderer.zoomTowardsSelected(false);
+  });
+
+  window.addEventListener('mystar-toggle-3d', (e) => {
+    if (!renderer) return;
+    const starId = e.detail?.starId || window.currentTrackedStarId;
+    const starData = renderer.stars.find(s => String(s.id) === String(starId) || String(s.id) === `CUST-${starId}`);
+    
+    if (starData) {
+      if (renderer._active3DStar) {
+        // Switch back to 2D normal star mode
+        renderer._clearActiveStarSystem();
+        renderer.selectStar(starData);
+        renderer.flyTo(starData, 1500);
+      } else {
+        // Switch to Photorealistic 3D Star mode
+        renderer.viewStar3D(starData);
+      }
+    }
+  });
+
+  // Listen for the MyStar Portal's "Locate in Galaxy" action
+  window.addEventListener('locate-mystar', (e) => {
+    const starId = e.detail?.starId;
+    if (!starId || !renderer || !renderer.stars) return;
+
+    window.isMyStarTracking = true;
+    window.currentTrackedStarId = starId; // Save for 3D toggle
+
+    if (typeof ui !== 'undefined') {
+      ui.hideTooltip();
+      ui.closePanel(); // Close side panel
+    }
+    
+    // Hide UI for a clean tracking view
+    const elsToHide = ['app-header', 'bottom-controls', 'btn-toggle-features', 'corner-menubar', 'time-controller', 'side-panel'];
+    elsToHide.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+    
+    // Find the star
+    // The star_id in the database can either be a standard HYG id, or 'CUST-XXXX'
+    const starData = renderer.stars.find(s => String(s.id) === String(starId) || String(s.id) === `CUST-${starId}`);
+    
+    if (starData) {
+      if (renderer._active3DStar) {
+        renderer._clearActiveStarSystem();
+      }
+      renderer.selectStar(starData); // Applies the blinking marker
+      renderer.flyTo(starData, 3000);
+    } else {
+      console.warn("Star not found in current loaded map:", starId);
+    }
+  });
+
+  window.addEventListener('stop-tracking-mystar', () => {
+    window.isMyStarTracking = false;
+    
+    if (renderer && renderer.controls) {
+      renderer.controls.autoRotate = false;
+    }
+
+    // Restore 3D UI
+    const elsToShow = ['app-header', 'bottom-controls', 'btn-toggle-features', 'corner-menubar', 'time-controller'];
+    elsToShow.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = ''; // restore
+    });
+
+  });
 
   // ─── 5. Initialize Interaction ───────────────────────────────
   const interaction = new Interaction(
@@ -116,6 +309,11 @@ async function main() {
   // Hover handler
   interaction.onHover = (star, x, y) => {
     if (renderer.missionSimulator && renderer.missionSimulator.active) return;
+    if (window.isMyStarTracking) {
+      ui.hideTooltip();
+      return;
+    }
+
     if (star) {
       updatePlanetRealtimeDistance(star);
       ui.showTooltip(star, x, y);
@@ -129,6 +327,7 @@ async function main() {
   // Click handler
   interaction.onClick = (star) => {
     if (renderer.missionSimulator && renderer.missionSimulator.active) return;
+
     updatePlanetRealtimeDistance(star);
     renderer.selectStar(star);
     ui.openPanel(star);
@@ -159,26 +358,30 @@ async function main() {
 
   // --- Corner Menubar Logic ---
 
-  
   const btnCollapse = document.getElementById('menu-collapse-btn');
-  const menuItems = document.getElementById('corner-menubar-items');
+  const btnToggleFeatures = document.getElementById('btn-toggle-features');
+  const cornerMenubar = document.getElementById('corner-menubar');
   
   function collapseMenu() {
-    if (menuItems && menuItems.style.display !== 'none') {
-      menuItems.style.display = 'none';
-      if (btnCollapse) btnCollapse.textContent = '▲';
+    if (cornerMenubar) {
+      cornerMenubar.classList.add('collapsed');
+      if (btnToggleFeatures) btnToggleFeatures.classList.remove('hidden');
     }
   }
 
-  if (btnCollapse && menuItems) {
-    btnCollapse.addEventListener('click', () => {
-      if (menuItems.style.display === 'none') {
-        menuItems.style.display = 'flex';
-        btnCollapse.textContent = '▼';
-      } else {
-        collapseMenu();
-      }
-    });
+  function openMenu() {
+    if (cornerMenubar) {
+      cornerMenubar.classList.remove('collapsed');
+      if (btnToggleFeatures) btnToggleFeatures.classList.add('hidden');
+    }
+  }
+
+  if (btnCollapse) {
+    btnCollapse.addEventListener('click', collapseMenu);
+  }
+
+  if (btnToggleFeatures) {
+    btnToggleFeatures.addEventListener('click', openMenu);
   }
 
 
@@ -391,9 +594,12 @@ async function main() {
   const btnSolarSystem = document.getElementById('btn-solar-system');
   if (btnSolarSystem) {
     btnSolarSystem.addEventListener('click', () => {
+      window.dispatchEvent(new CustomEvent('stop-tracking-mystar'));
       renderer.resetView(); // Exits planetarium mode and returns to space
-      document.getElementById('planetarium-ui').classList.add('hidden');
-      document.getElementById('bottom-controls').classList.remove('hidden');
+      const pUi = document.getElementById('planetarium-ui');
+      if (pUi) pUi.classList.add('hidden');
+      const bCtrl = document.getElementById('bottom-controls');
+      if (bCtrl) bCtrl.classList.remove('hidden');
     });
   }
 

@@ -14,6 +14,10 @@ export const SPECTRAL_TYPES = {
   M: { label: 'M-type Red Giant',   color: '#ff3333', temp: '3,200 K', description: 'Cool red stars — the most common type in the galaxy. Red dwarfs can live for trillions of years.' },
 };
 
+export const CONSTELLATIONS = {
+  "And": "Andromeda", "Ant": "Antlia", "Aps": "Apus", "Aqr": "Aquarius", "Aql": "Aquila", "Ara": "Ara", "Ari": "Aries", "Aur": "Auriga", "Boo": "Boötes", "Cae": "Caelum", "Cam": "Camelopardalis", "Cnc": "Cancer", "CVn": "Canes Venatici", "CMa": "Canis Major", "CMi": "Canis Minor", "Cap": "Capricornus", "Car": "Carina", "Cas": "Cassiopeia", "Cen": "Centaurus", "Cep": "Cepheus", "Cet": "Cetus", "Cha": "Chamaeleon", "Cir": "Circinus", "Col": "Columba", "Com": "Coma Berenices", "CrA": "Corona Australis", "CrB": "Corona Borealis", "Crv": "Corvus", "Crt": "Crater", "Cru": "Crux", "Cyg": "Cygnus", "Del": "Delphinus", "Dor": "Dorado", "Dra": "Draco", "Equ": "Equuleus", "Eri": "Eridanus", "For": "Fornax", "Gem": "Gemini", "Gru": "Grus", "Her": "Hercules", "Hor": "Horologium", "Hya": "Hydra", "Hyi": "Hydrus", "Ind": "Indus", "Lac": "Lacerta", "Leo": "Leo", "LMi": "Leo Minor", "Lep": "Lepus", "Lib": "Libra", "Lup": "Lupus", "Lyn": "Lynx", "Lyr": "Lyra", "Men": "Mensa", "Mic": "Microscopium", "Mon": "Monoceros", "Mus": "Musca", "Nor": "Norma", "Oct": "Octans", "Oph": "Ophiuchus", "Ori": "Orion", "Pav": "Pavo", "Peg": "Pegasus", "Per": "Perseus", "Phe": "Phoenix", "Pic": "Pictor", "Psc": "Pisces", "PsA": "Piscis Austrinus", "Pup": "Puppis", "Pyx": "Pyxis", "Ret": "Reticulum", "Sge": "Sagitta", "Sgr": "Sagittarius", "Sco": "Scorpius", "Scl": "Sculptor", "Sct": "Scutum", "Ser": "Serpens", "Sex": "Sextans", "Tau": "Taurus", "Tel": "Telescopium", "Tri": "Triangulum", "TrA": "Triangulum Australe", "Tuc": "Tucana", "UMa": "Ursa Major", "UMi": "Ursa Minor", "Vel": "Vela", "Vir": "Virgo", "Vol": "Volans", "Vul": "Vulpecula"
+};
+
 /**
  * Convert Right Ascension and Declination to 3D Cartesian coordinates.
  * @param {number} raDeg - Right Ascension in degrees
@@ -60,18 +64,24 @@ function rgbToHex(r, g, b) {
  * Load HYG star catalog from JSON.
  * @returns {Promise<Array>}
  */
-export async function loadStarCatalog() {
+export async function loadStarCatalog(maxCount = 120000) {
   const loadingBar  = document.getElementById('loading-bar');
   const loadingText = document.getElementById('loading-text');
 
-  setLoading(loadingBar, loadingText, 10, 'Fetching HYG star catalog (120k stars)…');
+  setLoading(loadingBar, loadingText, 10, 'Fetching HYG star catalog...');
 
   const response = await fetch('/data/hyg_stars.json');
-  const rawData  = await response.json();
+  let rawData  = await response.json();
+  
+  if (maxCount && rawData.length > maxCount) {
+    // Sort by magnitude (index 4) ascending so we keep the brightest stars!
+    rawData.sort((a, b) => a[4] - b[4]);
+    rawData = rawData.slice(0, maxCount);
+  }
 
   setLoading(loadingBar, loadingText, 50, `Parsing ${rawData.length} stars…`);
 
-  // HYG format: [id, x, y, z, mag, r, g, b, name]
+  // Format: [id, x, y, z, mag, r, g, b, name, type, con, hasProperName]
   // Note: HYG XYZ are in parsecs. We scale by some factor to fit our sky sphere.
   // We want stars around radius 4,000,000.
   // Actually, HYG XYZ are unit vectors sometimes, or parsecs.
@@ -82,7 +92,7 @@ export async function loadStarCatalog() {
   const maxRadius = 4000000;
   
   const stars = rawData.map(d => {
-    const [id, x, y, z, mag, r, g, b, name, type] = d;
+    const [id, x, y, z, mag, r, g, b, name, type, con, hasProperName] = d;
     
     // Normalize and scale to a volumetric 3D space
     const len = Math.sqrt(x*x + y*y + z*z) || 1;
@@ -103,12 +113,51 @@ export async function loadStarCatalog() {
       color: rgbToHex(r, g, b),
       dist_ly: len * 3.262, // 1 parsec = 3.262 light years
       type: type || 'G',
+      con: con || '',
+      isNamed: hasProperName === 1,
       position: { x: nx, y: ny, z: nz },
       size: magToSize(mag),
     };
   });
 
   setLoading(loadingBar, loadingText, 90, `Processed ${stars.length} stars…`);
+
+  try {
+    const customRes = await fetch('/api/stars/custom');
+    if (customRes.ok) {
+      const customData = await customRes.json();
+      customData.forEach(c => {
+        const { x, y, z } = raDecToCartesian(c.ra, c.dec_coord, c.distance || 100);
+        // Map back to our volumetric radius space if desired, or just use raw coords
+        // Actually since we want them to show in our space, we should scale them to volumetricRadius
+        const len = Math.sqrt(x*x + y*y + z*z) || 1;
+        const trueDistFactor = Math.min(1, Math.log10(c.distance + 1) / Math.log10(100000));
+        const volumetricRadius = minRadius + (trueDistFactor * (maxRadius - minRadius));
+        const nx = (x / len) * volumetricRadius;
+        const ny = (y / len) * volumetricRadius;
+        const nz = (z / len) * volumetricRadius;
+
+        stars.push({
+          id: 'CUST-' + c.id,
+          name: c.name,
+          mag: c.magnitude,
+          color: c.color,
+          dist_ly: c.distance,
+          type: c.spectral_type || 'G',
+          con: '',
+          isNamed: true,
+          position: { x: nx, y: ny, z: nz },
+          size: magToSize(c.magnitude) * 1.5, // Make custom stars slightly bigger!
+          ra: c.ra,
+          dec: c.dec_coord
+        });
+      });
+      console.log(`✅ Injected ${customData.length} Admin custom stars.`);
+    }
+  } catch(e) {
+    console.error('Failed to load custom stars:', e);
+  }
+
   return stars;
 }
 

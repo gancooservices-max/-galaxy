@@ -9,7 +9,7 @@ import * as THREE from 'three';
 
 // Full 88 IAU constellation definitions using named star pairs
 // Each line connects two stars by their HYG catalog IDs
-const CONSTELLATION_DATA = [
+export const CONSTELLATION_DATA = [
   {
     name: 'Orion', abbr: 'ORI',
     lines: [[26,29],[29,30],[30,7],[7,74],[74,10],[10,26],[29,74],[26,74],[10,30]],
@@ -135,8 +135,9 @@ const CONSTELLATION_DATA = [
 export class Constellations {
   constructor(skyGroup, stars) {
     this.skyGroup = skyGroup;
-    this.stars    = stars;
+    this.stars = stars;
     this.linesMesh = null;
+    this.dotsMesh  = null;
     this.labelSprites = [];
     this.visible  = true;
     // Build star index by id
@@ -145,52 +146,72 @@ export class Constellations {
   }
 
   build() {
-    this._buildLines();
+    this._buildLines(this.stars);
     this._buildLabels();
   }
 
-  _buildLines() {
+  _buildLines(stars) {
     const allPositions = [];
+    const usedPositions = [];
     const labelData = [];
 
-    for (const constellation of CONSTELLATION_DATA) {
-      const usedPositions = [];
+    // The CONSTELLATION_DATA uses indices based on star brightness rank
+    const sortedStars = [...stars].sort((a, b) => a.mag - b.mag);
 
+    for (const constellation of CONSTELLATION_DATA) {
+      const usedConstellationPositions = [];
       for (const [a, b] of constellation.lines) {
-        const starA = this._starById[a];
-        const starB = this._starById[b];
+        const starA = sortedStars[a];
+        const starB = sortedStars[b];
         if (!starA || !starB) continue;
 
-        const pa = starA.position;
-        const pb = starB.position;
-        allPositions.push(pa.x, pa.y, pa.z, pb.x, pb.y, pb.z);
-        usedPositions.push(pa, pb);
+        const p1 = new THREE.Vector3(starA.position.x, starA.position.y, starA.position.z).normalize().multiplyScalar(4050000);
+        const p2 = new THREE.Vector3(starB.position.x, starB.position.y, starB.position.z).normalize().multiplyScalar(4050000);
+
+        allPositions.push(p1.x, p1.y, p1.z, p2.x, p2.y, p2.z);
+        usedConstellationPositions.push(p1, p2);
       }
 
-      if (usedPositions.length > 0) {
+      if (usedConstellationPositions.length > 0) {
         const center = new THREE.Vector3();
-        usedPositions.forEach(p => center.add(new THREE.Vector3(p.x, p.y, p.z)));
-        center.divideScalar(usedPositions.length);
+        usedConstellationPositions.forEach(p => center.add(new THREE.Vector3(p.x, p.y, p.z)));
+        center.divideScalar(usedConstellationPositions.length);
         // Push outward to sit just above the sky sphere surface
         center.normalize().multiplyScalar(4050000);
         labelData.push({ name: constellation.name, pos: center });
       }
     }
 
-    if (allPositions.length === 0) return;
+    this.basePositions3D = new Float32Array(allPositions);
+    this.labelData3D = labelData;
 
     const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.Float32BufferAttribute(allPositions, 3));
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(this.basePositions3D, 3));
     const mat = new THREE.LineBasicMaterial({
-      color:       0x1e7a42,   // Stellarium green
+      color:       0xffffff,
       transparent: true,
-      opacity:     0.65,
+      opacity:     0.5,
       blending:    THREE.AdditiveBlending,
       depthWrite:  false,
     });
     this.linesMesh = new THREE.LineSegments(geo, mat);
     this.linesMesh.visible = this.visible;
     this.skyGroup.add(this.linesMesh);
+
+    const dotTex = this._createDotTexture();
+    const dotMat = new THREE.PointsMaterial({
+      color: 0xffffff,
+      size: 14,
+      sizeAttenuation: false,
+      map: dotTex,
+      transparent: true,
+      opacity: 1.0,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    this.dotsMesh = new THREE.Points(geo, dotMat);
+    this.dotsMesh.visible = this.visible;
+    this.skyGroup.add(this.dotsMesh);
 
     // Build 3D sprite labels inside skyGroup so they follow the sky
     for (const { name, pos } of labelData) {
@@ -200,6 +221,19 @@ export class Constellations {
       this.skyGroup.add(sprite);
       this.labelSprites.push(sprite);
     }
+  }
+
+  _createDotTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 64; canvas.height = 64;
+    const ctx = canvas.getContext('2d');
+    const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+    grad.addColorStop(0, 'rgba(255,255,255,1)');
+    grad.addColorStop(0.3, 'rgba(255,255,255,1)');
+    grad.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0,0,64,64);
+    return new THREE.CanvasTexture(canvas);
   }
 
   _buildLabels() {
@@ -221,14 +255,14 @@ export class Constellations {
     const spaced = text.toUpperCase().split('').join(' ');
     
     // Glow pass
-    ctx.shadowColor = 'rgba(30, 122, 66, 0.9)';
+    ctx.shadowColor = 'rgba(255, 255, 255, 0.4)';
     ctx.shadowBlur  = 12;
-    ctx.fillStyle   = 'rgba(30, 180, 90, 0.85)';
+    ctx.fillStyle   = 'rgba(255, 255, 255, 0.8)';
     ctx.fillText(spaced, 256, 40);
     
     // Crisp pass
     ctx.shadowBlur  = 0;
-    ctx.fillStyle   = 'rgba(80, 220, 120, 0.80)';
+    ctx.fillStyle   = 'rgba(255, 255, 255, 1.0)';
     ctx.fillText(spaced, 256, 40);
 
     const tex = new THREE.CanvasTexture(canvas);
@@ -265,12 +299,14 @@ export class Constellations {
   show() {
     this.visible = true;
     if (this.linesMesh) this.linesMesh.visible = true;
+    if (this.dotsMesh) this.dotsMesh.visible = true;
     this.labelSprites.forEach(l => l.visible = true);
   }
 
   hide() {
     this.visible = false;
     if (this.linesMesh) this.linesMesh.visible = false;
+    if (this.dotsMesh) this.dotsMesh.visible = false;
     this.labelSprites.forEach(l => l.visible = false);
   }
 
@@ -285,10 +321,21 @@ export class Constellations {
       this.linesMesh.geometry.dispose();
       this.linesMesh.material.dispose();
     }
+    if (this.dotsMesh) {
+      this.skyGroup.remove(this.dotsMesh);
+      if (this.dotsMesh.geometry) this.dotsMesh.geometry.dispose();
+      if (this.dotsMesh.material) {
+        if (this.dotsMesh.material.map) this.dotsMesh.material.map.dispose();
+        this.dotsMesh.material.dispose();
+      }
+    }
     this.labelSprites.forEach(s => {
       this.skyGroup.remove(s);
-      s.material.map?.dispose();
-      s.material.dispose();
+      if (s.material) {
+        if (s.material.map) s.material.map.dispose();
+        s.material.dispose();
+      }
     });
+    this.labelSprites = [];
   }
 }

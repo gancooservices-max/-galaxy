@@ -2,6 +2,10 @@
    StarVoyager — Design System & Full Stylesheet
    =================================================== */
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* ---------- Google Fonts import handled in HTML ---------- */
 
 /* ---------- CSS Custom Properties ---------- */
@@ -53,6 +57,7 @@
   --transition-mid:    280ms cubic-bezier(0.34, 1.56, 0.64, 1);
   --transition-slow:   450ms cubic-bezier(0.16, 1, 0.3, 1);
 }
+
 
 /* ---------- Reset & Base ---------- */
 *, *::before, *::after {
@@ -249,7 +254,87 @@ input, textarea {
   position: relative;
   display: flex;
   align-items: center;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  height: 44px;
+  width: 200px;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+}
+
+.search-wrapper:focus-within {
+  border-color: var(--border-mid);
+  background: rgba(12, 24, 48, 0.9);
+  box-shadow: 0 0 0 3px var(--accent-glow), 0 8px 32px rgba(0,0,0,0.4);
+}
+
+/* --- Combined Search Filter UI --- */
+.search-wrapper.combined {
   flex: 1;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.search-mode-select {
+  background: rgba(0, 212, 255, 0.08);
+  border: none;
+  border-right: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  height: 100%;
+  padding: 0 12px;
+  outline: none;
+  cursor: pointer;
+  font-family: var(--font-main);
+  font-size: 14px;
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+  -webkit-appearance: menulist;
+  transition: background var(--transition-fast);
+}
+
+.search-mode-select:hover {
+  background: rgba(0, 212, 255, 0.15);
+}
+
+.search-mode-select option,
+.dynamic-select option {
+  background-color: #ffffff;
+  color: #000000;
+  font-family: var(--font-main);
+}
+
+.search-input-flex-container {
+  position: relative;
+  flex: 1;
+  height: 100%;
+}
+
+.combined-input {
+  width: 100%;
+  height: 100%;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 36px 0 16px !important;
+  color: var(--text-primary);
+  font-family: var(--font-main);
+  font-size: 14px;
+  outline: none;
+}
+
+.dynamic-select {
+  flex: 1;
+  height: 100%;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 16px;
+  color: var(--text-primary);
+  font-family: var(--font-main);
+  font-size: 14px;
+  outline: none;
+  cursor: pointer;
 }
 
 .search-icon {
@@ -266,17 +351,14 @@ input, textarea {
 #satellite-search-input {
   width: 100%;
   height: 44px;
-  background: var(--bg-glass);
-  border: 1px solid var(--border-subtle);
+  background: transparent;
+  border: none;
   border-radius: var(--radius-lg);
   padding: 0 36px 0 36px;
   font-family: var(--font-main);
   font-size: 14px;
   color: var(--text-primary);
   outline: none;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
   text-overflow: ellipsis;
   white-space: nowrap;
   overflow: hidden;
@@ -291,21 +373,19 @@ input, textarea {
 #search-input:focus,
 #planet-search-input:focus,
 #satellite-search-input:focus {
-  border-color: var(--border-mid);
-  background: rgba(12, 24, 48, 0.9);
-  box-shadow: 0 0 0 3px var(--accent-glow), 0 8px 32px rgba(0,0,0,0.4);
+  /* (Removed redundant combined:focus-within as it is handled by search-wrapper:focus-within) */
 }
 
 .search-shortcut {
   position: absolute;
   right: 12px;
-  background: rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.08);
   border: 1px solid var(--border-subtle);
   border-radius: 6px;
-  padding: 2px 7px;
+  padding: 4px 10px;
   font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-dim);
+  font-size: 14px;
+  color: var(--text-secondary);
   pointer-events: none;
 }
 
@@ -362,13 +442,19 @@ input, textarea {
   font-size: 14px;
   font-weight: 500;
   color: var(--text-primary);
-  flex: 1;
+  flex: 1 1 auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .search-result-meta {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-secondary);
   font-family: var(--font-mono);
+  white-space: nowrap;
+  text-align: right;
+  flex-shrink: 0;
 }
 
 .search-no-results {
@@ -401,7 +487,7 @@ input, textarea {
   top: 80px;
   right: 0;
   bottom: 80px;
-  width: 320px;
+  width: 280px;
   z-index: 90;
   transform: translateX(100%);
   transition: transform var(--transition-slow);
@@ -417,21 +503,21 @@ input, textarea {
 
 .panel-inner {
   height: 100%;
-  background: var(--bg-glass-2);
-  border: 1px solid var(--border-subtle);
+  background: linear-gradient(180deg, rgba(8, 14, 26, 0.9) 0%, rgba(3, 6, 12, 0.95) 100%);
+  border: 1px solid rgba(0, 212, 255, 0.15);
   border-right: none;
   border-radius: var(--radius-lg) 0 0 var(--radius-lg);
-  backdrop-filter: blur(28px);
-  -webkit-backdrop-filter: blur(28px);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 24px 22px 28px;
+  padding: 28px 24px 32px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
   scrollbar-width: thin;
-  scrollbar-color: var(--border-subtle) transparent;
-  box-shadow: -20px 0 80px rgba(0,0,0,0.5);
+  scrollbar-color: rgba(0, 212, 255, 0.3) transparent;
+  box-shadow: -20px 0 100px rgba(0, 212, 255, 0.08);
 }
 
 .panel-close-btn {
@@ -484,11 +570,15 @@ input, textarea {
 }
 
 .panel-title {
-  font-size: 26px;
-  font-weight: 700;
+  font-size: 28px;
+  font-weight: 800;
   letter-spacing: -0.02em;
   color: var(--text-primary);
   line-height: 1.1;
+  background: linear-gradient(90deg, #fff, #cce8ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 4px 20px rgba(255,255,255,0.1);
 }
 
 .panel-badges {
@@ -500,26 +590,29 @@ input, textarea {
 .type-badge {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 4px 12px;
+  gap: 6px;
+  padding: 4px 14px;
   border-radius: 99px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 700;
   font-family: var(--font-mono);
-  letter-spacing: 0.04em;
-  border: 1px solid rgba(255,255,255,0.15);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.05);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
 .mag-badge {
   display: inline-flex;
   align-items: center;
-  padding: 4px 12px;
+  padding: 4px 14px;
   border-radius: 99px;
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 11px;
+  font-weight: 600;
   font-family: var(--font-mono);
-  background: rgba(255,255,255,0.06);
-  border: 1px solid var(--border-subtle);
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
   color: var(--text-secondary);
 }
 
@@ -541,34 +634,41 @@ input, textarea {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 12px;
-  background: rgba(255,255,255,0.03);
+  padding: 10px 14px;
+  background: rgba(255,255,255,0.02);
   border-radius: var(--radius-sm);
-  border: 1px solid rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.03);
+  transition: background 0.2s;
+}
+.stat-row:hover {
+  background: rgba(255,255,255,0.05);
 }
 .stat-row.hidden {
   display: none !important;
 }
 
 .stat-label {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-dim);
-  font-weight: 500;
-  letter-spacing: 0.03em;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .stat-value {
   font-size: 13px;
   color: var(--text-primary);
   font-family: var(--font-mono);
-  font-weight: 400;
+  font-weight: 500;
+  text-shadow: 0 0 10px rgba(255,255,255,0.2);
 }
 
 .panel-description {
-  font-size: 13px;
-  line-height: 1.7;
-  color: var(--text-secondary);
-  padding: 4px 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #a0aec0;
+  padding: 8px 0;
+  font-weight: 400;
 }
 
 .panel-fly-btn {
@@ -672,6 +772,10 @@ input, textarea {
   transition: all 0.3s ease;
 }
 .bottom-controls.hidden { display: none !important; }
+
+.ctrl-btn.hidden {
+  display: none !important;
+}
 
 .ctrl-btn {
   display: flex;
@@ -1684,58 +1788,103 @@ input, textarea {
 
 
 
-/* Corner Menubar Premium Styling */
+/* Features Side Panel (Left) */
 .corner-menubar {
-  position: absolute;
-  top: 90px;
-  left: 24px;
-  background: rgba(8, 12, 20, 0.45);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  padding: 14px;
+  position: fixed;
+  top: 80px;
+  left: 0;
+  width: 250px;
+  background: linear-gradient(180deg, rgba(8, 14, 26, 0.9) 0%, rgba(3, 6, 12, 0.95) 100%);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border: 1px solid rgba(0, 212, 255, 0.15);
+  border-left: none;
+  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+  padding: 24px 20px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  z-index: 1000;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-  min-width: 200px;
+  gap: 16px;
+  z-index: 90;
+  box-shadow: 20px 0 100px rgba(0, 212, 255, 0.05);
+  transition: transform var(--transition-slow);
+}
+
+.corner-menubar.collapsed {
+  transform: translateX(-110%);
+}
+
+.floating-toggle-btn {
+  position: fixed;
+  top: 80px;
+  left: 0;
+  background: rgba(8, 14, 26, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  border-left: none;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  color: var(--text-primary);
+  padding: 12px 18px;
+  font-family: var(--font-main);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  z-index: 85;
+  transition: all var(--transition-fast);
+  box-shadow: 4px 0 20px rgba(0,0,0,0.5);
+}
+
+.floating-toggle-btn:hover {
+  background: rgba(0, 212, 255, 0.15);
+  box-shadow: 4px 0 24px rgba(0,212,255,0.2);
+  color: #fff;
+}
+
+.floating-toggle-btn.hidden {
+  transform: translateX(-110%);
+  pointer-events: none;
 }
 
 .menu-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: 6px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  margin-bottom: 4px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(0, 212, 255, 0.15);
+  margin-bottom: 8px;
 }
 
 .menu-title {
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 10px;
-  font-family: 'Inter', sans-serif;
-  font-weight: 500;
-  letter-spacing: 4px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 2px;
   text-transform: uppercase;
+  background: linear-gradient(90deg, #fff, var(--accent-cyan));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 #menu-collapse-btn {
-  background: none;
-  border: none;
-  color: rgba(255, 255, 255, 0.4);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 4px;
+  color: var(--text-primary);
   cursor: pointer;
   font-size: 10px;
-  padding: 4px;
-  transition: color 0.2s ease;
+  padding: 6px 10px;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 #menu-collapse-btn:hover {
-  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  border-color: rgba(0, 212, 255, 0.5);
 }
 
 #corner-menubar-items {

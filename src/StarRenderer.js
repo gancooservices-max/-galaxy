@@ -13,6 +13,8 @@ import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { getPlanetsData, calculateLST } from './PlanetData.js';
 import { FAMOUS_MISSIONS } from './StarData.js';
 import { MissionSimulator } from './MissionSimulator.js';
+import { Constellations, CONSTELLATION_DATA } from './Constellations.js';
+import { Asterisms } from './Asterisms.js';
 // satellite.js is loaded globally via CDN in index.html
 
 export class StarRenderer {
@@ -31,6 +33,8 @@ export class StarRenderer {
     this.selectionStar = null;
     this.animateId = null;
     this.autoRotate = false;
+    this.is2DMapMode = false;
+    this._mapModeValue = 0;
     this.clock     = new THREE.Clock();
     this.onReady   = null;
     // FPS tracking
@@ -58,12 +62,18 @@ export class StarRenderer {
 
     // Mission Simulator reference
     this.missionSimulator = null;
+
+    // Constellation lines group
+    this.constellationLinesData = null;
+    this.constellationLinesGroup = new THREE.Group();
+    this._originalCameraState = null;
   }
 
   init() {
     this._createScene();
     this.skyGroup = new THREE.Group();
     this.scene.add(this.skyGroup);
+    this.scene.add(this.constellationLinesGroup);
     this._createCamera();
     this._createRenderer();
     this._createControls();
@@ -76,6 +86,7 @@ export class StarRenderer {
     this._initSatellites();
     this._addResizeListener();
     this.missionSimulator = new MissionSimulator(this);
+    this._loadConstellationLines();
     return this;
   }
 
@@ -220,8 +231,8 @@ export class StarRenderer {
         const theta = (i / segments) * Math.PI * 2;
         points.push(new THREE.Vector3(
           ringRadius * Math.cos(theta),
-          y,
-          ringRadius * Math.sin(theta)
+          ringRadius * Math.sin(theta),
+          y
         ));
       }
       const geo = new THREE.BufferGeometry().setFromPoints(points);
@@ -239,8 +250,8 @@ export class StarRenderer {
         const phi = (i / segments) * Math.PI - Math.PI / 2;
         points.push(new THREE.Vector3(
           radius * Math.cos(phi) * Math.cos(angle),
-          radius * Math.sin(phi),
-          radius * Math.cos(phi) * Math.sin(angle)
+          radius * Math.cos(phi) * Math.sin(angle),
+          radius * Math.sin(phi)
         ));
       }
       const geo = new THREE.BufferGeometry().setFromPoints(points);
@@ -693,10 +704,10 @@ export class StarRenderer {
             vec3 f = fract(x);
             f = f * f * (3.0 - 2.0 * f);
             
-            return mix(mix(mix(hash(i + vec3(0,0,0)), hash(i + vec3(1,0,0)), f.x),
-                           mix(hash(i + vec3(0,1,0)), hash(i + vec3(1,1,0)), f.x), f.y),
-                       mix(mix(hash(i + vec3(0,0,1)), hash(i + vec3(1,0,1)), f.x),
-                           mix(hash(i + vec3(0,1,1)), hash(i + vec3(1,1,1)), f.x), f.y), f.z);
+            return mix(mix(mix(hash(i + vec3(0.0, 0.0, 0.0)), hash(i + vec3(1.0, 0.0, 0.0)), f.x),
+                           mix(hash(i + vec3(0.0, 1.0, 0.0)), hash(i + vec3(1.0, 1.0, 0.0)), f.x), f.y),
+                       mix(mix(hash(i + vec3(0.0, 0.0, 1.0)), hash(i + vec3(1.0, 0.0, 1.0)), f.x),
+                           mix(hash(i + vec3(0.0, 1.0, 1.0)), hash(i + vec3(1.0, 1.0, 1.0)), f.x), f.y), f.z);
         }
 
         float fbm(vec3 p) {
@@ -1234,6 +1245,18 @@ CSS (TIANGONG)
     const colors = new Float32Array(count * 3);
     const sizes  = new Float32Array(count);
     const mags   = new Float32Array(count);
+    const categories = new Float32Array(count);
+    const isConstellationAttr = new Float32Array(count);
+    const filterAlphas = new Float32Array(count);
+    const isRegisteredAttr = new Float32Array(count);
+
+    const constellationStarIds = new Set();
+    if (typeof CONSTELLATION_DATA !== 'undefined') {
+      CONSTELLATION_DATA.forEach(c => c.lines.forEach(line => {
+        constellationStarIds.add(line[0]);
+        constellationStarIds.add(line[1]);
+      }));
+    }
 
     starData.forEach((star, i) => {
       const { x, y, z } = star.position;
@@ -1252,12 +1275,22 @@ CSS (TIANGONG)
       const clipped = Math.max(-2.0, Math.min(6.5, mag));
       sizes[i] = Math.max(0.6, 6.5 - clipped * 0.85) * 1.55;
       mags[i] = mag;
+      isConstellationAttr[i] = constellationStarIds.has(star.id) ? 1.0 : 0.0;
+      
+      const typeStr = star.type ? star.type.charAt(0).toUpperCase() : 'G';
+      const typeMap = { 'O':0, 'B':1, 'A':2, 'F':3, 'G':4, 'K':5, 'M':6 };
+      categories[i] = typeMap[typeStr] !== undefined ? typeMap[typeStr] : 4;
+      filterAlphas[i] = 1.0;
     });
 
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     geo.setAttribute('color',    new THREE.BufferAttribute(colors, 3));
     geo.setAttribute('size',     new THREE.BufferAttribute(sizes, 1));
     geo.setAttribute('mag',      new THREE.BufferAttribute(mags, 1));
+    geo.setAttribute('category', new THREE.BufferAttribute(categories, 1));
+    geo.setAttribute('isConstellation', new THREE.BufferAttribute(isConstellationAttr, 1));
+    geo.setAttribute('aFilterAlpha', new THREE.BufferAttribute(filterAlphas, 1));
+    geo.setAttribute('aIsRegistered', new THREE.BufferAttribute(isRegisteredAttr, 1));
 
     // Star texture (soft glowing circle)
     const tex = this._createStarTexture();
@@ -1272,27 +1305,39 @@ CSS (TIANGONG)
         uUpDir: { value: new THREE.Vector3(0,1,0) },
         uSunAlt: { value: 1.0 },
         uIsPlanetarium: { value: 0.0 },
-        uLimitingMag: { value: 6.0 }
+        uTelescopeMode: { value: 0.0 },
+        uLimitingMag: { value: 6.0 },
+        uCategoryVisibility: { value: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0] }
       },
       vertexShader: `
         attribute float size;
         attribute vec3 color;
         attribute float mag;
+        attribute float category;
+        attribute float isConstellation;
+        attribute float aFilterAlpha;
+        attribute float aIsRegistered;
         uniform float uTime;
         uniform float uPixelRatio;
         uniform vec3 uObserverPos;
         uniform vec3 uUpDir;
         uniform float uSunAlt;
         uniform float uIsPlanetarium;
+        uniform float uTelescopeMode;
         uniform float uLimitingMag;
-
+        uniform float uCategoryVisibility[7];
+        
         varying vec3 vColor;
         varying float vTwinkle;
         varying float vVisibility;
+        varying float vIsRegistered;
 
         void main() {
+          vIsRegistered = aIsRegistered;
           vColor = color;
-          vec4 worldPos = modelMatrix * vec4(position, 1.0);
+          
+          vec3 pos3D = position;
+          vec4 worldPos = modelMatrix * vec4(pos3D, 1.0);
           
           float visibility = 1.0;
           if (uIsPlanetarium > 0.5) {
@@ -1314,7 +1359,7 @@ CSS (TIANGONG)
             visibility *= magFade;
           }
           
-          vVisibility = visibility;
+          vVisibility = visibility * uCategoryVisibility[int(category)] * aFilterAlpha;
 
           // Spectral color
           vec3 baseColor = color;
@@ -1342,10 +1387,22 @@ CSS (TIANGONG)
             float sineWave = sin(uTime * 4.0 + phase);
             twinkle = 0.5 + 0.5 * (sineWave * 0.5 + 0.5); // Smoother, less aggressive twinkle
           }
+          
+          float sizeMultiplier = 1.0;
+          if (uTelescopeMode > 0.5 && aFilterAlpha > 0.9 && mag < 4.5) {
+            // Gentle blink for the main stars connected by lines
+            float phase = position.x * 0.5 + position.y * 0.3;
+            float pulse = sin(uTime * 4.0 + phase);
+            twinkle = 0.7 + 0.8 * (pulse * 0.5 + 0.5); // 0.7x to 1.5x brightness
+            sizeMultiplier = 1.0 + 0.3 * (pulse * 0.5 + 0.5); // 1.0x to 1.3x size
+          }
+          // Registered stars look exactly like normal stars; no special highlighting.
+
+          vColor = baseColor;
           vTwinkle = twinkle;
           
           // Fixed pixel size for stars so they remain visible regardless of distance, giving a true point-light feel
-          gl_PointSize = max(1.5, size * vTwinkle * uPixelRatio);
+          gl_PointSize = max(1.5, size * vTwinkle * uPixelRatio) * sizeMultiplier;
           gl_Position = projectionMatrix * mvPos;
         }
       `,
@@ -1354,6 +1411,7 @@ CSS (TIANGONG)
         varying vec3 vColor;
         varying float vTwinkle;
         varying float vVisibility;
+        varying float vIsRegistered;
         
         void main() {
           if (vVisibility < 0.01) discard;
@@ -1382,6 +1440,212 @@ CSS (TIANGONG)
 
     // Build floating star name labels (Stellarium style)
     this._buildStarLabels(starData);
+
+    // Initialize Constellations
+    if (!this.constellations) {
+      this.constellations = new Constellations(this.skyGroup, starData);
+      this.constellations.build();
+      this.constellations.hide(); // Hidden by default
+    }
+
+    // Initialize Asterisms
+    if (!this.asterisms) {
+      this.asterisms = new Asterisms(this.skyGroup, starData);
+      this.asterisms.build();
+      this.asterisms.hide();
+    }
+  }
+
+  filterStars(category, subCategory) {
+    if (!this.pointsMesh || !this.pointsMesh.geometry) return;
+    const geo = this.pointsMesh.geometry;
+    const filterAlphas = geo.attributes.aFilterAlpha.array;
+    
+    // Dim unselected stars so the background universe is still visible but very faint
+    const DIM_OPACITY = 0.015; 
+    
+    for (let i = 0; i < this.stars.length; i++) {
+      const star = this.stars[i];
+      let visible = true;
+      
+      if (category === 'named') {
+        visible = star.isNamed === true;
+      } else if (category === 'constellation') {
+        if (subCategory && subCategory !== 'all') {
+          visible = (star.con === subCategory);
+        } else {
+          visible = (star.con && star.con.trim() !== '');
+        }
+      }
+      
+      filterAlphas[i] = visible ? 1.0 : DIM_OPACITY;
+    }
+    
+    geo.attributes.aFilterAlpha.needsUpdate = true;
+  }
+
+  highlightRegisteredStars(registeredMap) {
+    if (!this.stars || !this.pointsMesh) return;
+    
+    const geo = this.pointsMesh.geometry;
+    const isRegisteredAttr = geo.attributes.aIsRegistered.array;
+    
+    for (let i = 0; i < this.stars.length; i++) {
+      const star = this.stars[i];
+      if (registeredMap[star.id]) {
+        isRegisteredAttr[i] = 1.0;
+      } else {
+        isRegisteredAttr[i] = 0.0;
+      }
+    }
+    
+    geo.attributes.aIsRegistered.needsUpdate = true;
+  }
+
+  async _loadConstellationLines() {
+    try {
+      const res = await fetch('/data/constellations.lines.json');
+      this.constellationLinesData = await res.json();
+    } catch (e) {
+      console.error("Failed to load constellation lines:", e);
+    }
+  }
+
+  enterTelescopeMode(conId) {
+    if (!this.constellationLinesData) return;
+
+    // Clear existing lines
+    while (this.constellationLinesGroup.children.length > 0) {
+      const child = this.constellationLinesGroup.children[0];
+      this.constellationLinesGroup.remove(child);
+      if (child.geometry) child.geometry.dispose();
+      if (child.material) child.material.dispose();
+    }
+
+    const feature = this.constellationLinesData.features.find(f => f.id === conId);
+    if (!feature) return;
+
+    // Radius matching celestial grid / stars
+    const radius = 3800000;
+
+    const points = [];
+    let centerX = 0, centerY = 0, centerZ = 0;
+    let pointCount = 0;
+
+    const coords = feature.geometry.coordinates;
+    coords.forEach(lineString => {
+      for (let i = 0; i < lineString.length; i++) {
+        const [raDeg, decDeg] = lineString[i];
+        
+        // Convert RA/Dec to Cartesian matching HYG format:
+        // HYG x = r * cos(Dec)*cos(RA), y = r * cos(Dec)*sin(RA), z = r * sin(Dec)
+        // Wait, the grid uses: phi = Dec, angle = RA.
+        // x = r * cos(phi)*cos(angle), y = r * sin(phi), z = r * cos(phi)*sin(angle)
+        // Let's use the grid spherical coordinates:
+        const phi = decDeg * Math.PI / 180;
+        const raRad = raDeg * Math.PI / 180;
+        const x = radius * Math.cos(phi) * Math.cos(raRad);
+        const y = radius * Math.cos(phi) * Math.sin(raRad);
+        const z = radius * Math.sin(phi);
+
+        points.push(new THREE.Vector3(x, y, z));
+        centerX += x; centerY += y; centerZ += z;
+        pointCount++;
+      }
+    });
+
+    if (pointCount > 0) {
+      centerX /= pointCount;
+      centerY /= pointCount;
+      centerZ /= pointCount;
+    }
+
+    // Since it's a MultiLineString, we can't draw it as a single Line loop, 
+    // we need to draw each lineString separately.
+    const material = new THREE.LineBasicMaterial({
+      color: 0x00d4ff,
+      linewidth: 2,
+      transparent: true,
+      opacity: 0.8,
+      blending: THREE.AdditiveBlending
+    });
+
+    coords.forEach(lineString => {
+      const linePoints = [];
+      lineString.forEach(pt => {
+        const raRad = pt[0] * Math.PI / 180;
+        const decRad = pt[1] * Math.PI / 180;
+        // In fetch_hyg: x=col17, y=col18, z=col19 (Cartesian)
+        // Standard astronomical Cartesian:
+        const x = radius * Math.cos(decRad) * Math.cos(raRad);
+        const y = radius * Math.cos(decRad) * Math.sin(raRad);
+        const z = radius * Math.sin(decRad);
+        linePoints.push(new THREE.Vector3(x, y, z));
+      });
+      const geo = new THREE.BufferGeometry().setFromPoints(linePoints);
+      const lineMesh = new THREE.Line(geo, material);
+      this.constellationLinesGroup.add(lineMesh);
+    });
+
+    // Save camera state
+    if (!this._originalCameraState) {
+      this._originalCameraState = {
+        position: this.camera.position.clone(),
+        target: this.controls.target.clone()
+      };
+    }
+
+    // Telescope View: Move camera to origin, look at constellation center
+    const targetDir = new THREE.Vector3(centerX, centerY, centerZ).normalize();
+    this.camera.position.set(0, 0, 0);
+    this.controls.target.copy(targetDir.multiplyScalar(100)); // Target a point along the vector
+    this.controls.update();
+
+    if (this.pointsMesh) {
+      this.pointsMesh.material.uniforms.uTelescopeMode.value = 1.0;
+    }
+
+    // Hide Sun and Planets to prevent occlusion from origin
+    if (this.planetMeshes) {
+      this.planetMeshes.forEach(pm => { if (pm.mesh) pm.mesh.visible = false; });
+    }
+    if (this._orbitLines) {
+      Object.values(this._orbitLines).forEach(line => line.visible = false);
+    }
+    if (this._sunGlow) this._sunGlow.visible = false;
+  }
+
+  exitTelescopeMode() {
+    // Clear lines
+    while (this.constellationLinesGroup.children.length > 0) {
+      const child = this.constellationLinesGroup.children[0];
+      this.constellationLinesGroup.remove(child);
+      if (child.geometry) child.geometry.dispose();
+      if (child.material) child.material.dispose();
+    }
+
+    // Restore camera
+    if (this._originalCameraState) {
+      this.camera.position.copy(this._originalCameraState.position);
+      this.controls.target.copy(this._originalCameraState.target);
+      this.controls.update();
+      this._originalCameraState = null;
+    }
+
+    if (this.pointsMesh) {
+      this.pointsMesh.material.uniforms.uTelescopeMode.value = 0.0;
+    }
+
+    // Show Sun and Planets
+    if (this.planetMeshes) {
+      this.planetMeshes.forEach(pm => { if (pm.mesh) pm.mesh.visible = true; });
+    }
+    if (this._orbitLines) {
+      Object.values(this._orbitLines).forEach(line => line.visible = true);
+    }
+    if (this._sunGlow) this._sunGlow.visible = true;
+
+    this.filterStars('all', 'all');
   }
 
   _buildStarLabels(starData) {
@@ -1904,13 +2168,13 @@ CSS (TIANGONG)
               vec3 f = fract(p);
               f = f*f*(3.0-2.0*f);
               float a = h(i);
-              float b = h(i+vec3(1,0,0));
-              float c = h(i+vec3(0,1,0));
-              float d = h(i+vec3(1,1,0));
-              float e = h(i+vec3(0,0,1));
-              float g = h(i+vec3(1,0,1));
-              float k = h(i+vec3(0,1,1));
-              float m = h(i+vec3(1,1,1));
+              float b = h(i+vec3(1.0, 0.0, 0.0));
+              float c = h(i+vec3(0.0, 1.0, 0.0));
+              float d = h(i+vec3(1.0, 1.0, 0.0));
+              float e = h(i+vec3(0.0, 0.0, 1.0));
+              float g = h(i+vec3(1.0, 0.0, 1.0));
+              float k = h(i+vec3(0.0, 1.0, 1.0));
+              float m = h(i+vec3(1.0, 1.0, 1.0));
               return mix(mix(mix(a,b,f.x),mix(c,d,f.x),f.y),
                          mix(mix(e,g,f.x),mix(k,m,f.x),f.y), f.z);
             }
@@ -1984,10 +2248,10 @@ CSS (TIANGONG)
               vec3 i = floor(x);
               vec3 f = fract(x);
               f = f * f * (3.0 - 2.0 * f);
-              return mix(mix(mix(hash(i + vec3(0,0,0)), hash(i + vec3(1,0,0)), f.x),
-                             mix(hash(i + vec3(0,1,0)), hash(i + vec3(1,1,0)), f.x), f.y),
-                         mix(mix(hash(i + vec3(0,0,1)), hash(i + vec3(1,0,1)), f.x),
-                             mix(hash(i + vec3(0,1,1)), hash(i + vec3(1,1,1)), f.x), f.y), f.z);
+              return mix(mix(mix(hash(i + vec3(0.0, 0.0, 0.0)), hash(i + vec3(1.0, 0.0, 0.0)), f.x),
+                             mix(hash(i + vec3(0.0, 1.0, 0.0)), hash(i + vec3(1.0, 1.0, 0.0)), f.x), f.y),
+                         mix(mix(hash(i + vec3(0.0, 0.0, 1.0)), hash(i + vec3(1.0, 0.0, 1.0)), f.x),
+                             mix(hash(i + vec3(0.0, 1.0, 1.0)), hash(i + vec3(1.0, 1.0, 1.0)), f.x), f.y), f.z);
             }
 
             void main() {
@@ -4360,7 +4624,7 @@ CSS (TIANGONG)
     this._supernovaRemnants.push(pulsarAssembly);
   }
 
-  viewStar3D(starData) {
+  viewStar3D(starData, instant = false) {
     if (!starData) return;
 
     // Get world position of this star
@@ -4385,6 +4649,7 @@ CSS (TIANGONG)
       this._trackedPlanet = null;
       this.controls.enableZoom = true;
       this.controls.enablePan = true;
+      this.controls.enableRotate = true;
       this.controls.minDistance = 0.5;
       this.controls.maxDistance = 5000000;
       this.camera.up.set(0, 1, 0);
@@ -4393,9 +4658,14 @@ CSS (TIANGONG)
         const dir = new THREE.Vector3().subVectors(this.camera.position, worldPos).normalize();
         if (dir.lengthSq() === 0) dir.set(0, 0, 1);
         const targetCamPos = worldPos.clone().add(dir.multiplyScalar(150));
-        this.camera.position.copy(targetCamPos);
-        this.controls.target.copy(worldPos);
-        this.controls.update();
+        
+        if (instant) {
+          this.camera.position.copy(targetCamPos);
+          this.controls.target.copy(worldPos);
+          this.controls.update();
+        } else {
+          this._transitionCamPos(targetCamPos, 2000);
+        }
       }
 
       this.selectStar(starData);
@@ -4405,7 +4675,11 @@ CSS (TIANGONG)
     this._clearActiveStarSystem();
 
     if (starData.isPlanet || starData.isSatellite) {
-      this.flyTo(starData);
+      if (instant) {
+        // Skip animation for planets too if instant is requested
+      } else {
+        this.flyTo(starData);
+      }
       return;
     }
 
@@ -4446,13 +4720,13 @@ CSS (TIANGONG)
           vec3 f = fract(p);
           f = f*f*(3.0-2.0*f);
           float a = h(i);
-          float b = h(i+vec3(1,0,0));
-          float c = h(i+vec3(0,1,0));
-          float d = h(i+vec3(1,1,0));
-          float e = h(i+vec3(0,0,1));
-          float g = h(i+vec3(1,0,1));
-          float k = h(i+vec3(0,1,1));
-          float m = h(i+vec3(1,1,1));
+          float b = h(i+vec3(1.0, 0.0, 0.0));
+          float c = h(i+vec3(0.0, 1.0, 0.0));
+          float d = h(i+vec3(1.0, 1.0, 0.0));
+          float e = h(i+vec3(0.0, 0.0, 1.0));
+          float g = h(i+vec3(1.0, 0.0, 1.0));
+          float k = h(i+vec3(0.0, 1.0, 1.0));
+          float m = h(i+vec3(1.0, 1.0, 1.0));
           return mix(mix(mix(a,b,f.x),mix(c,d,f.x),f.y),
                      mix(mix(e,g,f.x),mix(k,m,f.x),f.y), f.z);
         }
@@ -5012,6 +5286,13 @@ CSS (TIANGONG)
     this.scene.add(this._active3DStar);
     this._active3DStarData = starData;
 
+    // Ensure controls are fully unlocked so the user can drag/rotate the 3D star
+    if (this.controls) {
+      this.controls.enableRotate = true;
+      this.controls.enablePan = true;
+      this.controls.enableZoom = true;
+    }
+
     // Give it a mock 'data' property so flyTo zooms close to it like a planet
     const flyTarget = {
       isPlanet: true, 
@@ -5019,7 +5300,20 @@ CSS (TIANGONG)
       data: { size: radius }
     };
 
-    this.flyTo(flyTarget, 3000);
+    if (instant) {
+      // Instantly jump to the star without the 3-second fly animation
+      const targetDist = Math.max(0.5, radius * 4.0);
+      const dir = new THREE.Vector3().subVectors(this.camera.position, this._active3DStar.position).normalize();
+      if (dir.lengthSq() === 0) dir.set(0, 0, 1);
+      const targetCamPos = this._active3DStar.position.clone().add(dir.multiplyScalar(targetDist));
+      
+      this.camera.position.copy(targetCamPos);
+      this.controls.target.copy(this._active3DStar.position);
+      this.controls.update();
+      if (this.renderer) this.renderer.compile(this.scene, this.camera);
+    } else {
+      this.flyTo(flyTarget, 3000);
+    }
   }
 
   triggerSupernova(starData) {
@@ -5085,39 +5379,22 @@ CSS (TIANGONG)
     const dist = dir.length();
     dir.normalize();
 
-    // Auto-activate 3D star view if zooming in very close (full zoom) to a star point!
-    if (isZoomIn && isStarSelection && !this._active3DStar && (dist * 0.7) < 220) {
-      this.viewStar3D(this._selectedCelestial);
-      return;
-    }
-
-    // Auto-exit 3D view if zooming out far from the 3D star!
-    if (!isZoomIn && this._active3DStar && (dist * 1.3) > 280) {
-      this.viewStar3D(this._selectedCelestial);
-      return;
-    }
-
-    let newDist;
-    if (isZoomIn) {
-      newDist = dist * 0.7; // Zoom in by moving 30% closer
-      // If we are looking at the 3D star sphere close up, don't clip inside
-      const minDist = this._active3DStar ? 5 : 100; 
-      if (newDist < minDist) newDist = minDist;
-    } else {
-      newDist = dist * 1.3; // Zoom out by moving 33% further away
-      if (newDist > 5000000) newDist = 5000000;
-    }
-    
-    // Set targetCamGoal so the render loop slides the camera smoothly towards the star!
-    this._targetCamGoal = targetPos.clone().add(dir.multiplyScalar(newDist));
   }
 
   flyTo(targetData, duration = 4000) {
     // During an active mission, mission handles camera — don't do cinematic flight
     if (this.missionSimulator && this.missionSimulator.active) return;
     
-    // If flying somewhere, exit telescope mode
-    
+    // If flying to a planet/satellite and we are currently viewing a 3D star, exit the 3D star view!
+    if ((targetData.isPlanet || targetData.isSatellite) && this._active3DStar && targetData.mesh !== this._active3DStar) {
+      this._clearActiveStarSystem();
+      const sunMeshEntry = this.planetMeshes ? this.planetMeshes.find(pm => pm.data.id === 'Sun') : null;
+      if (sunMeshEntry) sunMeshEntry.mesh.visible = true;
+      if (this._sunGlow) {
+        this._sunGlow.visible = true;
+        this._sunGlow.material.opacity = 1.0;
+      }
+    }
     
     // Set tracked object to keep camera attached to it while it orbits
     this._trackedPlanet = (targetData.isPlanet || targetData.isSatellite) ? targetData : null;
@@ -5286,6 +5563,24 @@ CSS (TIANGONG)
       return this.pointsMesh.visible;
     }
     return false;
+  }
+
+  toggleConstellations() {
+    this.showConstellations = !this.showConstellations;
+    if (this.showConstellations) {
+      if (this.constellations) this.constellations.show();
+      if (this.asterisms) this.asterisms.show();
+    } else {
+      if (this.constellations) this.constellations.hide();
+      if (this.asterisms) this.asterisms.hide();
+    }
+    return this.showConstellations;
+  }
+
+  setCategoryVisibility(index, isVisible) {
+    if (this._starMaterial && this._starMaterial.uniforms.uCategoryVisibility) {
+      this._starMaterial.uniforms.uCategoryVisibility.value[index] = isVisible ? 1.0 : 0.0;
+    }
   }
 
   resetView() {
@@ -5976,6 +6271,23 @@ CSS (TIANGONG)
           this._targetCamGoal = null;
         }
         this.controls.update();
+      }
+
+      if (this.constellations) {
+        this.constellations.updateHorizonClip(this.camera, this._lastUpDir || new THREE.Vector3(0,1,0), this.isPlanetariumMode);
+      }
+      if (this.asterisms) {
+        this.asterisms.updateHorizonClip(this.camera, this._lastUpDir || new THREE.Vector3(0,1,0), this.isPlanetariumMode);
+      }
+
+      if (this.is2DMapMode && this._mapModeValue < 1) {
+        this._mapModeValue = Math.min(1, this._mapModeValue + 0.02);
+        this._starMaterial.uniforms.uMapMode.value = this._mapModeValue;
+        if (this.constellations) this.constellations.setMapMode(this._mapModeValue);
+      } else if (!this.is2DMapMode && this._mapModeValue > 0) {
+        this._mapModeValue = Math.max(0, this._mapModeValue - 0.02);
+        this._starMaterial.uniforms.uMapMode.value = this._mapModeValue;
+        if (this.constellations) this.constellations.setMapMode(this._mapModeValue);
       }
 
       // Update live telemetry + Earth zoom map

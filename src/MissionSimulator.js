@@ -23,26 +23,42 @@ function createRocketTexture(type) {
   const canvas = document.createElement('canvas');
   canvas.width = 256; canvas.height = 512;
   const ctx = canvas.getContext('2d');
+  
   if (type === 'core') {
-    ctx.fillStyle = '#f0ede8'; ctx.fillRect(0,0,256,512);
-    ctx.fillStyle = '#c84a11'; ctx.fillRect(0,90,256,35); ctx.fillRect(0,360,256,35);
-    ctx.fillStyle = '#1a1a1a'; ctx.fillRect(0,200,256,8);
+    ctx.fillStyle = '#dddddd'; ctx.fillRect(0,0,256,512); // Light grey base
+    ctx.fillStyle = '#ffffff'; 
+    ctx.fillRect(0, 50, 256, 120); 
+    ctx.fillRect(0, 300, 256, 100); 
+    ctx.fillStyle = '#333333';
+    ctx.fillRect(0, 40, 256, 10);
+    ctx.fillRect(0, 170, 256, 10);
+    ctx.fillRect(0, 290, 256, 10);
+    ctx.fillRect(0, 400, 256, 10);
   } else if (type === 'booster') {
-    ctx.fillStyle = '#f8f8f8'; ctx.fillRect(0,0,256,512);
-    ctx.fillStyle = '#2a2a2a'; ctx.fillRect(0,30,256,28); ctx.fillRect(0,440,256,30);
-    const fx=68,fy=195,fw=120,fh=75;
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,256,512);
+    ctx.fillStyle = '#222222'; 
+    ctx.fillRect(0,40,256,8); 
+    ctx.fillRect(0,180,256,8); 
+    ctx.fillRect(0,340,256,8); 
+    ctx.fillRect(0,460,256,8);
+    ctx.save();
+    ctx.translate(128, 256);
+    ctx.rotate(Math.PI/2);
+    ctx.fillStyle = '#000000';
+    ctx.font = 'bold 36px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('I S R O', 0, -40);
+    ctx.fillText('I N D I A', 0, 70);
+    ctx.restore();
+  } else if (type === 'upper') {
+    ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,256,512);
+  } else if (type === 'fairing') {
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,256,512);
+    const fx=100,fy=350,fw=56,fh=36;
     ctx.fillStyle='#FF9933'; ctx.fillRect(fx,fy,fw,fh/3);
     ctx.fillStyle='#FFFFFF'; ctx.fillRect(fx,fy+fh/3,fw,fh/3);
     ctx.fillStyle='#138808'; ctx.fillRect(fx,fy+2*fh/3,fw,fh/3);
-    ctx.fillStyle='#000080';
-    ctx.beginPath(); ctx.arc(fx+fw/2,fy+fh/2,11,0,Math.PI*2); ctx.fill();
-    ctx.strokeStyle='#000080'; ctx.lineWidth=1.5;
-    for(let s=0;s<24;s++){const a=(s/24)*Math.PI*2;ctx.beginPath();ctx.moveTo(fx+fw/2,fy+fh/2);ctx.lineTo(fx+fw/2+Math.cos(a)*11,fy+fh/2+Math.sin(a)*11);ctx.stroke();}
-    ctx.fillStyle='#FFFFFF'; ctx.beginPath(); ctx.arc(fx+fw/2,fy+fh/2,5,0,Math.PI*2); ctx.fill();
-  } else if (type === 'upper') {
-    ctx.fillStyle='#f5f5f5'; ctx.fillRect(0,0,256,512);
-    ctx.fillStyle='#FF9933'; ctx.fillRect(0,280,256,18);
-    ctx.fillStyle='#138808'; ctx.fillRect(0,298,256,18);
+    ctx.strokeStyle='#000080'; ctx.beginPath(); ctx.arc(fx+fw/2,fy+fh/2,5,0,Math.PI*2); ctx.stroke();
   }
   const tex = new THREE.CanvasTexture(canvas);
   tex.wrapS = THREE.RepeatWrapping;
@@ -57,9 +73,9 @@ function createExhaustTexture() {
   const ctx = canvas.getContext('2d');
   const g = ctx.createLinearGradient(0,256,0,0);
   g.addColorStop(0,'rgba(255,255,255,1)');
-  g.addColorStop(0.15,'rgba(255,230,200,0.95)');
-  g.addColorStop(0.4,'rgba(255,140,0,0.8)');
-  g.addColorStop(0.7,'rgba(180,40,0,0.3)');
+  g.addColorStop(0.15,'rgba(255,220,150,1)');
+  g.addColorStop(0.4,'rgba(255,100,0,0.9)');
+  g.addColorStop(0.7,'rgba(200,40,0,0.6)');
   g.addColorStop(1,'rgba(0,0,0,0)');
   ctx.fillStyle = g; ctx.fillRect(0,0,64,256);
   window._exhaustTex = new THREE.CanvasTexture(canvas);
@@ -98,6 +114,54 @@ function createCryoExhaustTexture() {
   return window._cryoExhaustTex;
 }
 
+function createLanderExhaustTexture() {
+  if (window._landerExhaustTex) return window._landerExhaustTex;
+  const canvas = document.createElement('canvas');
+  canvas.width = 64; canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  const g = ctx.createLinearGradient(0,128,0,0);
+  g.addColorStop(0,'rgba(50,20,0,0)');         // Bottom (South Pole)
+  g.addColorStop(0.3,'rgba(255,180,50,0.4)');
+  g.addColorStop(0.7,'rgba(255,240,180,0.8)');
+  g.addColorStop(1,'rgba(255,255,255,1)');     // Top (North Pole)
+  ctx.fillStyle = g; ctx.fillRect(0,0,64,128);
+  window._landerExhaustTex = new THREE.CanvasTexture(canvas);
+  return window._landerExhaustTex;
+}
+
+function createISROLogoTexture() {
+  if (window._isroLogo) return window._isroLogo;
+  const canvas = document.createElement('canvas');
+  canvas.width = 128; canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,128,128);
+  ctx.fillStyle = '#0033a0'; ctx.font = 'bold 35px Arial'; ctx.textAlign = 'center';
+  ctx.fillText('ISRO', 64, 85);
+  ctx.fillStyle = '#f37021'; ctx.font = 'bold 35px Arial';
+  ctx.fillText('इसरो', 64, 45);
+  window._isroLogo = new THREE.CanvasTexture(canvas);
+  return window._isroLogo;
+}
+
+function createFlagTexture() {
+  if (window._flagTex) return window._flagTex;
+  const canvas = document.createElement('canvas');
+  canvas.width = 128; canvas.height = 85;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#FF9933'; ctx.fillRect(0, 0, 128, 28);
+  ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 28, 128, 28);
+  ctx.fillStyle = '#138808'; ctx.fillRect(0, 56, 128, 29);
+  ctx.beginPath(); ctx.arc(64, 42, 12, 0, Math.PI*2);
+  ctx.strokeStyle = '#000080'; ctx.lineWidth = 2; ctx.stroke();
+  for(let i=0; i<24; i++){
+    ctx.beginPath(); ctx.moveTo(64, 42);
+    ctx.lineTo(64 + 12*Math.cos(i*Math.PI/12), 42 + 12*Math.sin(i*Math.PI/12));
+    ctx.stroke();
+  }
+  window._flagTex = new THREE.CanvasTexture(canvas);
+  return window._flagTex;
+}
+
 // ─── Mission Stage Definitions ────────────────────────────────────────────────
 // Each stage has: id, name, description (Hindi), button text, auto (auto-advance)
 const STAGES = [
@@ -126,7 +190,8 @@ export class MissionSimulator {
     this.boosters = [];
     this.particles = [];
     this.plumes = [];
-    this.scaffold = null;
+    this.landerPlumes = [];
+    this.landerLegs = [];    this.scaffold = null;
 
     // Stage flags
     this._fairingHeatMesh = null;
@@ -268,16 +333,25 @@ export class MissionSimulator {
       map: createCryoExhaustTexture(), transparent: true, depthWrite: false,
       blending: THREE.AdditiveBlending, side: THREE.DoubleSide
     });
+    const landerExhaustMat = new THREE.MeshBasicMaterial({
+      map: createLanderExhaustTexture(), transparent: true, depthWrite: false,
+      blending: THREE.AdditiveBlending, side: THREE.DoubleSide
+    });
 
     // Core Stage (L110)
-    const core = new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.04,0.4,32), coreMat);
+    const core = new THREE.Group();
+    const coreCyl = new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.04,0.35,32), coreMat);
+    core.add(coreCyl);
+    const coreBottom = new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.03,0.05,32), coreMat);
+    coreBottom.position.y = -0.2;
+    core.add(coreBottom);
     core.position.y = 0.2;
     this.rocket.add(core);
     this.coreStage = core;
 
     for (let i = 0; i < 2; i++) {
       const nozzle = new THREE.Mesh(new THREE.ConeGeometry(0.015,0.04,16,1,true), darkMat);
-      nozzle.position.set(i===0?0.015:-0.015, -0.02, 0);
+      nozzle.position.set(i===0?0.015:-0.015, -0.24, 0);
       nozzle.rotation.x = Math.PI;
       const plume = new THREE.Mesh(new THREE.ConeGeometry(0.04,0.45,16,1,true), exhaustMat);
       plume.position.y = 0.225; plume.visible = false;
@@ -330,14 +404,14 @@ export class MissionSimulator {
     
     upper.add(cryoEngineGroup);
 
-    // Fairing
-    const fairingMat = new THREE.MeshStandardMaterial({ color: 0xf5f5f5, roughness: 0.5 });
-    const fairingBottom = new THREE.Mesh(new THREE.CylinderGeometry(0.055,0.045,0.08,32), fairingMat);
-    fairingBottom.position.y = 0.69;
+    // Fairing (Bulbous)
+    const fairingMat = new THREE.MeshStandardMaterial({ map: createRocketTexture('fairing'), roughness: 0.5 });
+    const fairingBottom = new THREE.Mesh(new THREE.CylinderGeometry(0.065,0.045,0.12,32), fairingMat);
+    fairingBottom.position.y = 0.71;
     this.rocket.add(fairingBottom);
     this.fairingBottom = fairingBottom;
-    const fairingTop = new THREE.Mesh(new THREE.ConeGeometry(0.055,0.18,32), fairingMat);
-    fairingTop.position.y = 0.82;
+    const fairingTop = new THREE.Mesh(new THREE.ConeGeometry(0.065,0.22,32), fairingMat);
+    fairingTop.position.y = 0.88;
     this.rocket.add(fairingTop);
     this.fairingTop = fairingTop;
 
@@ -370,56 +444,197 @@ export class MissionSimulator {
     // Vikram Lander
     this.vikramLander = new THREE.Group();
     this.vikramLander.position.y = 0.035; // lowered slightly
-    const landerBody = new THREE.Mesh(
-      new THREE.BoxGeometry(0.02,0.02,0.02), // scaled down from 0.035
-      new THREE.MeshStandardMaterial({ color: 0xddaa00, metalness: 0.5, roughness: 0.5 })
-    );
+    
+    const goldFoil = new THREE.MeshStandardMaterial({ color: 0xffcc00, metalness: 0.6, roughness: 0.4 });
+    const solarGrid = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.8, roughness: 0.2 });
+    const darkMetal = new THREE.MeshStandardMaterial({ color: 0x444444, metalness: 0.8, roughness: 0.5 });
+    const mastMat = new THREE.MeshStandardMaterial({ color: 0xcccccc });
+
+    // Main Body
+    const landerBody = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.02, 0.02), goldFoil);
     this.vikramLander.add(landerBody);
+    
+    // Front Cavity (dark indent for rover)
+    const cavity = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.012, 0.002), darkMetal);
+    cavity.position.set(0, -0.004, 0.0095);
+    this.vikramLander.add(cavity);
+
+    // Side Solar Panels (Grid look)
+    const panelSideGeo = new THREE.BoxGeometry(0.001, 0.016, 0.016);
+    const panelBackGeo = new THREE.BoxGeometry(0.016, 0.016, 0.001);
+    
+    const panelRight = new THREE.Mesh(panelSideGeo, solarGrid);
+    panelRight.position.set(0.0101, 0, 0);
+    this.vikramLander.add(panelRight);
+    
+    const panelLeft = new THREE.Mesh(panelSideGeo, solarGrid);
+    panelLeft.position.set(-0.0101, 0, 0);
+    this.vikramLander.add(panelLeft);
+    
+    const panelBack = new THREE.Mesh(panelBackGeo, solarGrid);
+    panelBack.position.set(0, 0, -0.0101);
+    this.vikramLander.add(panelBack);
+    
+    // Add ISRO Logo and Flag Decals
+    const isroMat = new THREE.MeshBasicMaterial({ map: createISROLogoTexture() });
+    const flagMat = new THREE.MeshBasicMaterial({ map: createFlagTexture() });
+    
+    const logoR = new THREE.Mesh(new THREE.PlaneGeometry(0.005, 0.005), isroMat);
+    logoR.position.set(0.0006, 0.004, 0); logoR.rotation.y = Math.PI/2;
+    panelRight.add(logoR);
+    const flagR = new THREE.Mesh(new THREE.PlaneGeometry(0.006, 0.004), flagMat);
+    flagR.position.set(0.0006, -0.004, 0); flagR.rotation.y = Math.PI/2;
+    panelRight.add(flagR);
+
+    const logoL = new THREE.Mesh(new THREE.PlaneGeometry(0.005, 0.005), isroMat);
+    logoL.position.set(-0.0006, 0.004, 0); logoL.rotation.y = -Math.PI/2;
+    panelLeft.add(logoL);
+    const flagL = new THREE.Mesh(new THREE.PlaneGeometry(0.006, 0.004), flagMat);
+    flagL.position.set(-0.0006, -0.004, 0); flagL.rotation.y = -Math.PI/2;
+    panelLeft.add(flagL);
+
+    // Top Dome
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(0.006, 16, 16, 0, Math.PI*2, 0, Math.PI/2), goldFoil);
+    dome.position.set(0, 0.01, 0);
+    this.vikramLander.add(dome);
+
+    // Top Tripod Mast
+    const mastGroup = new THREE.Group();
+    mastGroup.position.set(0, 0.01, 0);
+    for(let m=0; m<3; m++) {
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.0003, 0.0003, 0.008), mastMat);
+      const angle = (m/3)*Math.PI*2;
+      leg.position.set(Math.cos(angle)*0.004, 0.003, Math.sin(angle)*0.004);
+      leg.rotation.z = Math.cos(angle)*-0.3;
+      leg.rotation.x = Math.sin(angle)*0.3;
+      mastGroup.add(leg);
+    }
+    const mastTop = new THREE.Mesh(new THREE.CylinderGeometry(0.002, 0.002, 0.0005), mastMat);
+    mastTop.position.set(0, 0.007, 0);
+    mastGroup.add(mastTop);
+    this.vikramLander.add(mastGroup);
+
+    // Legs and Shock Absorbers
     for (let i = 0; i < 4; i++) {
-      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.0015,0.0015,0.02), new THREE.MeshStandardMaterial({ color: 0x888888 }));
-      const px = (i%2===0?1:-1)*0.012, pz = (i<2?1:-1)*0.012;
-      leg.position.set(px,-0.012,pz);
-      leg.rotation.x = pz>0?-0.3:0.3; leg.rotation.z = px>0?0.3:-0.3;
-      this.vikramLander.add(leg);
+      const legGroup = new THREE.Group();
+      const px = (i%2===0?1:-1);
+      const pz = (i<2?1:-1);
+      
+      // Main slanted strut
+      const mainStrut = new THREE.Mesh(new THREE.CylinderGeometry(0.001,0.001,0.024), goldFoil);
+      mainStrut.rotation.x = pz>0?-0.4:0.4; 
+      mainStrut.rotation.z = px>0?0.4:-0.4;
+      mainStrut.position.set(px*0.008, -0.01, pz*0.008); 
+      legGroup.add(mainStrut);
+      
+      // Footpad
+      const footpad = new THREE.Mesh(new THREE.CylinderGeometry(0.0025, 0.0025, 0.0015, 12), mastMat);
+      footpad.position.set(px*0.0125, -0.021, pz*0.0125);
+      legGroup.add(footpad);
+      
+      this.landerLegs.push(legGroup);
+      this.vikramLander.add(legGroup);
     }
 
-    // Thruster nozzles on lander (4 sides for deceleration)
+    // 4 Corner Thruster nozzles
     for (let i = 0; i < 4; i++) {
-      const tn = new THREE.Mesh(new THREE.ConeGeometry(0.004,0.01,8,1,true), darkMat);
-      const angle = (i/4)*Math.PI*2;
-      tn.position.set(Math.cos(angle)*0.02, -0.015, Math.sin(angle)*0.02);
+      const tn = new THREE.Mesh(new THREE.ConeGeometry(0.003,0.008,8,1,true), darkMat);
+      const angle = (i/4)*Math.PI*2 + Math.PI/4;
+      tn.position.set(Math.cos(angle)*0.007, -0.01, Math.sin(angle)*0.007);
       tn.rotation.x = Math.PI;
-      const tp = new THREE.Mesh(new THREE.ConeGeometry(0.006,0.06,8,1,true), exhaustMat);
-      tp.position.y = 0.03; tp.visible = false;
+      const tp = new THREE.Mesh(new THREE.SphereGeometry(0.012, 16, 16), landerExhaustMat);
+      tp.scale.set(1.2, 2.5, 1.2);
+      tp.position.y = 0.025; tp.visible = false;
       tn.add(tp);
-      this.plumes.push(tp);
+      this.landerPlumes.push(tp); // specifically track lander plumes
       this.vikramLander.add(tn);
     }
 
     this.ramp = new THREE.Mesh(
-      new THREE.BoxGeometry(0.012,0.001,0.04),
-      new THREE.MeshStandardMaterial({ color: 0x555555, metalness: 0.8 })
+      new THREE.BoxGeometry(0.011, 0.001, 0.04),
+      goldFoil
     );
-    this.ramp.position.set(0,-0.015,0.0175);
-    this.ramp.geometry.translate(0,0,0.02);
+    this.ramp.position.set(0, -0.009, 0.01);
+    this.ramp.geometry.translate(0, 0, 0.02);
     this.ramp.rotation.x = -Math.PI/2;
     this.vikramLander.add(this.ramp);
     this.spacecraft.add(this.vikramLander);
 
     // Pragyan Rover
     this.pragyanRover = new THREE.Group();
-    this.pragyanRover.position.set(0,-0.008,0.01); // adjusted for smaller lander
-    const roverBody = new THREE.Mesh(new THREE.BoxGeometry(0.008,0.006,0.007), new THREE.MeshStandardMaterial({ color: 0xeeeeee }));
+    this.pragyanRover.position.set(0, -0.004, 0.0095); // starts inside the cavity
+    
+    // Chassis (Golden foil color)
+    const foilMat = new THREE.MeshStandardMaterial({ color: 0xcca300, roughness: 0.3, metalness: 0.8 });
+    const roverBody = new THREE.Mesh(new THREE.BoxGeometry(0.007, 0.005, 0.008), foilMat);
+    roverBody.position.y = 0.001;
     this.pragyanRover.add(roverBody);
-    for (let i = 0; i < 6; i++) {
-      const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.002,0.002,0.0015,8), darkMat);
-      wheel.rotation.z = Math.PI/2;
-      wheel.position.set((i%2===0?0.0045:-0.0045),-0.003,(i<2?-0.0025:(i<4?0:0.0025)));
-      this.pragyanRover.add(wheel);
+    
+    // Rocker-Bogie Suspension
+    const strutMat = new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.5 });
+    const wheelMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9 });
+    
+    this.roverWheels = []; // Store wheels for animation
+    
+    for (let side = -1; side <= 1; side += 2) {
+      const x = side * 0.0045;
+      
+      // Main Bogie bar
+      const bogie = new THREE.Mesh(new THREE.BoxGeometry(0.0008, 0.0008, 0.006), strutMat);
+      bogie.position.set(x, 0, 0);
+      this.pragyanRover.add(bogie);
+      
+      // Wheels
+      for (let w = 0; w < 3; w++) {
+        const wheelGroup = new THREE.Group();
+        
+        const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.0018, 0.0018, 0.0015, 12), wheelMat);
+        wheel.rotation.z = Math.PI/2;
+        
+        // Wheel spokes/hubs
+        const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.001, 0.001, 0.0017, 6), new THREE.MeshStandardMaterial({ color: 0xaaaaaa }));
+        hub.rotation.z = Math.PI/2;
+        
+        wheelGroup.add(wheel);
+        wheelGroup.add(hub);
+        
+        const z = w === 0 ? 0.003 : (w === 1 ? 0 : -0.003);
+        wheelGroup.position.set(x + side*0.0008, -0.002, z);
+        this.pragyanRover.add(wheelGroup);
+        this.roverWheels.push(wheelGroup);
+      }
     }
-    const roverPanel = new THREE.Mesh(new THREE.BoxGeometry(0.006,0.001,0.008), new THREE.MeshStandardMaterial({ color: 0x113388 }));
-    roverPanel.position.set(0,0.003,0); roverPanel.rotation.x = -0.3;
-    this.pragyanRover.add(roverPanel);
+    
+    // Navcam Mast
+    const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.0004, 0.0004, 0.005), strutMat);
+    mast.position.set(0.002, 0.004, 0.003);
+    this.pragyanRover.add(mast);
+    
+    const camHead = new THREE.Mesh(new THREE.BoxGeometry(0.002, 0.0015, 0.0015), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+    camHead.position.set(0.002, 0.0065, 0.003);
+    this.pragyanRover.add(camHead);
+    
+    // Solar Panel (Blue tint, with frame)
+    this.roverSolarPanel = new THREE.Group();
+    this.roverSolarPanel.position.set(0, 0.0035, -0.003); // Hinge position
+    
+    const panelFrame = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.0005, 0.009), strutMat);
+    panelFrame.position.set(0, 0, 0.0045);
+    this.roverSolarPanel.add(panelFrame);
+    
+    const panelCells = new THREE.Mesh(new THREE.BoxGeometry(0.0075, 0.0006, 0.0085), new THREE.MeshStandardMaterial({ color: 0x113388, metalness: 0.6, roughness: 0.2 }));
+    panelCells.position.set(0, 0, 0.0045);
+    this.roverSolarPanel.add(panelCells);
+    
+    // Panel starts folded (0 rotation) and will animate to -0.6 when deployed
+    this.roverSolarPanel.rotation.x = 0; 
+    this.pragyanRover.add(this.roverSolarPanel);
+    
+    // Antenna
+    const antenna = new THREE.Mesh(new THREE.CylinderGeometry(0.0002, 0.0002, 0.004), new THREE.MeshStandardMaterial({ color: 0x222222 }));
+    antenna.position.set(-0.002, 0.004, -0.003);
+    this.pragyanRover.add(antenna);
+    
     this.vikramLander.add(this.pragyanRover);
 
     this.spacecraft.visible = false;
@@ -429,10 +644,20 @@ export class MissionSimulator {
       const booster = new THREE.Group();
       const bCore = new THREE.Mesh(new THREE.CylinderGeometry(0.032,0.032,0.6,24), boosterMat);
       bCore.position.y = 0.3; booster.add(bCore);
-      const bNose = new THREE.Mesh(new THREE.ConeGeometry(0.032,0.1,24), boosterMat);
-      bNose.position.y = 0.65; booster.add(bNose);
+      
+      const bNoseGeom = new THREE.ConeGeometry(0.032, 0.1, 24);
+      bNoseGeom.translate(0, 0.05, 0); // Base at y=0
+      const posAttr = bNoseGeom.attributes.position;
+      for (let j=0; j<posAttr.count; j++) {
+         const y = posAttr.getY(j);
+         const xOff = (i===0 ? -0.015 : 0.015) * (y/0.1);
+         posAttr.setX(j, posAttr.getX(j) + xOff);
+      }
+      bNoseGeom.computeVertexNormals();
+      const bNose = new THREE.Mesh(bNoseGeom, boosterMat);
+      bNose.position.y = 0.6; booster.add(bNose);
       const bNozzle = new THREE.Mesh(new THREE.ConeGeometry(0.025,0.06,16,1,true), darkMat);
-      bNozzle.position.y = -0.03; bNozzle.rotation.x = Math.PI;
+      bNozzle.position.y = -0.3; bNozzle.rotation.x = Math.PI;
       const bPlume = new THREE.Mesh(new THREE.ConeGeometry(0.06,0.85,16,1,true), boosterExhaustMat);
       bPlume.position.y = 0.425; bPlume.visible = false;
       bNozzle.add(bPlume); this.plumes.push(bPlume);
@@ -656,6 +881,7 @@ export class MissionSimulator {
       const btn = document.getElementById('btn-mission');
       if (btn) btn.click(); else this.exit();
     });
+    
     document.getElementById('hud-btn-action').addEventListener('click', () => this._handleNextAction());
 
     const setFF = (val, btnId) => {
@@ -744,7 +970,7 @@ export class MissionSimulator {
     } else if (this.stage === 8) {
       this.stage = 9; this.timeInStage = 0;
       this._setActionBtn(null);
-      this._setStatus('⬇️ Powered Descent Initiated — Thrusters Firing', '15 minutes of terror begins...');
+      this._setStatus('🏁 Soft Landing Initiated — Thrusters Firing', '15 minutes of terror begins...');
       this._updateProgress(9);
       this._showToast('⬇️ Powered Descent Started — 15 Minutes of Terror!');
     } else if (this.stage === 10) {
@@ -798,16 +1024,22 @@ export class MissionSimulator {
     this._gainNode.gain.setTargetAtTime(volume, this._audioCtx.currentTime, 0.2);
     this._filter.frequency.setTargetAtTime(frequency, this._audioCtx.currentTime, 0.2);
   }
-
   _stopRumble() {
     if (this._gainNode && this._audioCtx) {
       this._gainNode.gain.setTargetAtTime(0, this._audioCtx.currentTime, 0.5);
     }
-    if (this._audioSrc) {
-      const src = this._audioSrc;
-      this._audioSrc = null;
-      setTimeout(() => { try { src.stop(); } catch(e){} }, 600);
-    }
+  }
+
+  _playBeep(freq = 1200) {
+    if (!this._audioCtx) return;
+    if (this._audioCtx.state === 'suspended') this._audioCtx.resume();
+    const osc = this._audioCtx.createOscillator();
+    const gain = this._audioCtx.createGain();
+    osc.type = 'sine'; osc.frequency.setValueAtTime(freq, this._audioCtx.currentTime);
+    osc.connect(gain); gain.connect(this._audioCtx.destination);
+    gain.gain.setValueAtTime(0.05, this._audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this._audioCtx.currentTime + 0.15);
+    osc.start(); osc.stop(this._audioCtx.currentTime + 0.15);
   }
 
   // ─── Particles ───────────────────────────────────────────────────────────────
@@ -851,19 +1083,24 @@ export class MissionSimulator {
     }
   }
 
-_createKeplerOrbitParams(center, perigee, apogee, angleOffset = 0) {
+  _createKeplerOrbitParams(center, perigee, apogee, angleOffset = 0, isPolar = false) {
     const a = (perigee + apogee) / 2;
     const c = a - perigee;
     const b = Math.sqrt(a * a - c * c);
-    return { a, b, c, perigee, apogee, center, angleOffset };
+    return { a, b, c, perigee, apogee, center, angleOffset, isPolar };
   }
 
   _getOrbitPosition(orbitParams, E) {
-    const { a, b, c, center, angleOffset } = orbitParams;
+    const { a, b, c, center, angleOffset, isPolar } = orbitParams;
     const x_plan = a * Math.cos(E) - c;
     const z_plan = b * Math.sin(E);
     const x_rot = x_plan * Math.cos(angleOffset) - z_plan * Math.sin(angleOffset);
     const z_rot = x_plan * Math.sin(angleOffset) + z_plan * Math.cos(angleOffset);
+    
+    if (isPolar) {
+       // Polar orbit: orbit goes over Y poles instead of Z equator
+       return new THREE.Vector3(center.x + x_rot, center.y + z_rot, center.z);
+    }
     return new THREE.Vector3(center.x + x_rot, center.y, center.z + z_rot);
   }
 
@@ -951,14 +1188,29 @@ _createKeplerOrbitParams(center, perigee, apogee, angleOffset = 0) {
       if (this._cinematicSlowMo > 1.0) this._cinematicSlowMo = 1.0;
     }
 
-    this._autoFastForward = 1.0;
+    let targetAutoFF = 1.0;
     if (this.stage === 2) {
       const t = this.timeInStage;
-      if (t > 20 && t < 105) this._autoFastForward = 10.0;
-      else if (t > 115 && t < 185) this._autoFastForward = 10.0;
-      else if (t > 195 && t < 295) this._autoFastForward = 10.0;
-      else if (t > 305 && t < 895) this._autoFastForward = 50.0; // Super fast to T+900
+      if (t > 30 && t < 105) targetAutoFF = 10.0;
+      else if (t > 115 && t < 185) targetAutoFF = 10.0;
+      else if (t > 195 && t < 295) targetAutoFF = 10.0;
+      else if (t > 305 && t < 895) targetAutoFF = 50.0; // Super fast to T+900
     }
+
+    if (this._cinematicSlowMo < 1.0) {
+      targetAutoFF = 1.0; // Slow down properly during cinematic moments
+    }
+
+    if (this._actualAutoFF === undefined) this._actualAutoFF = 1.0;
+    
+    // Smooth transition
+    if (targetAutoFF < this._actualAutoFF) {
+      this._actualAutoFF += (targetAutoFF - this._actualAutoFF) * deltaRaw * 5.0; // Fast brake
+    } else {
+      this._actualAutoFF += (targetAutoFF - this._actualAutoFF) * deltaRaw * 0.5; // Gradual speed up
+    }
+    
+    this._autoFastForward = this._actualAutoFF;
 
     const delta = deltaRaw * (this._fastForward || 1.0) * (this._cinematicSlowMo || 1.0) * this._autoFastForward;
     this.timeInStage += delta;
@@ -981,7 +1233,7 @@ _createKeplerOrbitParams(center, perigee, apogee, angleOffset = 0) {
     this._updateParticles(delta);
 
     this.debris.forEach(d => {
-      d.position.addScaledVector(d.userData.vel, delta*0.02);
+      d.position.addScaledVector(d.userData.vel, delta);
       if (d.userData.angularVel) {
         d.rotation.x += d.userData.angularVel.x*delta;
         d.rotation.y += d.userData.angularVel.y*delta;
@@ -1093,9 +1345,9 @@ _createKeplerOrbitParams(center, perigee, apogee, angleOffset = 0) {
 
       let localUp = this.rocket.position.clone().normalize();
       let moveDir = localUp.clone();
-      if (this.timeInStage > 20.0) {
-        let tFrac = Math.min(1.0, (this.timeInStage - 20.0) / 880.0); // T+900 is orbit
-        const pitchAngle = Math.pow(tFrac, 0.85) * (Math.PI / 2); // Majestic, slow pitch profile
+      if (this.timeInStage > 30.0) {
+        let tFrac = Math.min(1.0, (this.timeInStage - 30.0) / 870.0); // T+900 is orbit
+        const pitchAngle = Math.pow(tFrac, 1.2) * (Math.PI / 2); // Majestic, slow pitch profile
         
         const localEast = localUp.clone().cross(new THREE.Vector3(0,1,0)).normalize();
         const pitchAxis = localUp.clone().cross(localEast).normalize();
@@ -1135,14 +1387,19 @@ _createKeplerOrbitParams(center, perigee, apogee, angleOffset = 0) {
       else if (this.timeInStage < 300) {
         if (Math.random()<0.8) spawnExhaust(coreLocal, false);
       }
-      // ── T+300+: C25 only (upper stage) ──
-      else if (this.timeInStage >= 300) {
-        if (this._c25Plume) this._c25Plume.visible = Math.random() > 0.2;
-        if (Math.random()<0.6) {
+      // ── T+305+: C25 only (upper stage) ──
+      else if (this.timeInStage >= 305) {
+        if (this._c25Plume) {
+          this._c25Plume.visible = true;
+          this._c25Plume.scale.set(1.0, 0.95 + Math.random() * 0.1, 1.0);
+        }
+        if (Math.random()<0.2) { // Minimal particles, let the transparent blue cone do the work
           const c25Pos = new THREE.Vector3();
           this.upperStage?.getWorldPosition(c25Pos);
           this._spawnParticles(c25Pos, moveDir.clone().negate(), false);
         }
+      } else if (this.timeInStage >= 300) {
+        if (this._c25Plume) this._c25Plume.visible = false;
       }
 
       // ── MAX-Q at T+13 ──
@@ -1176,7 +1433,7 @@ _createKeplerOrbitParams(center, perigee, apogee, angleOffset = 0) {
       // ── S200 Booster Separation T+150 ──
       if (this.timeInStage >= 150 && this.boosters.length > 0) {
         this._stage2BoostersSeparated = true;
-        this._cinematicSlowMo = 0.2; // 0.2x slow motion
+        this._cinematicSlowMo = 0.3; // Noticeable slow motion to watch the event
         
         // Circular shockwave
         const rwp = new THREE.Vector3(); this.rocket.getWorldPosition(rwp);
@@ -1184,16 +1441,26 @@ _createKeplerOrbitParams(center, perigee, apogee, angleOffset = 0) {
         
         if (this.flashEl) {
           this.flashEl.classList.add('active');
-          setTimeout(() => this.flashEl?.classList.remove('active'), 150);
+          setTimeout(() => this.flashEl?.classList.remove('active'), 50); // Short flash so it doesn't hide the separation
         }
 
         this.boosters.forEach((b, idx) => {
           const wPos = new THREE.Vector3(), wQuat = new THREE.Quaternion();
           b.getWorldPosition(wPos); b.getWorldQuaternion(wQuat);
           this.rocket.remove(b); this.renderer.scene.add(b);
+          
+          // Disable booster engine plumes so they don't restart
+          b.traverse(child => {
+             if (this.plumes.includes(child)) child.visible = false;
+          });
+          
           b.position.copy(wPos); b.quaternion.copy(wQuat); b.scale.set(SCALE,SCALE,SCALE);
           const dir = new THREE.Vector3(idx===0?0.6:-0.6, -0.3, (Math.random()-0.5)*0.2).applyQuaternion(wQuat);
-          b.userData.vel = dir.multiplyScalar(2.5);
+          
+          const visualSpeedScale = this.timeInStage < 25 ? (0.01 + 0.09 * (this.timeInStage/25)) : 0.1;
+          const currentVel = moveDir.clone().multiplyScalar(velocity * visualSpeedScale * SCALE);
+          b.userData.vel = currentVel.add(dir.multiplyScalar(1.2 * SCALE)); // perfect visible push
+          
           b.userData.angularVel = new THREE.Vector3((Math.random()-0.5)*2.5,(Math.random()-0.5)*2.5,(Math.random()-0.5)*2.5);
           
           // Booster residual smoke
@@ -1206,6 +1473,14 @@ _createKeplerOrbitParams(center, perigee, apogee, angleOffset = 0) {
         this._cameraShaking = 0.2; // Drastically reduce shake
         this._setStatus('🔥 S200 Booster Separation!', 'L110 core stage continues burning');
         this._showToast('🔥 T+150s: S200 Solid Boosters Separated!');
+        
+        // Cinematic camera jump cut - Front/Top view to see boosters fall sideways
+        const target = this.renderer.controls.target;
+        const dist = Math.max(this.renderer.camera.position.distanceTo(target), 0.01);
+        const front = new THREE.Vector3(0,0,1).applyQuaternion(this.rocket.quaternion);
+        const up = new THREE.Vector3(0,1,0).applyQuaternion(this.rocket.quaternion);
+        const viewDir = front.add(up.multiplyScalar(0.5)).normalize();
+        this.renderer.camera.position.copy(target).add(viewDir.multiplyScalar(dist));
       }
 
       // ── Fairing Separation T+190 ──
@@ -1231,13 +1506,23 @@ _createKeplerOrbitParams(center, perigee, apogee, angleOffset = 0) {
           this.rocket.remove(f); this.renderer.scene.add(f);
           f.position.copy(wPos); f.quaternion.copy(wQuat); f.scale.set(SCALE,SCALE,SCALE);
           const sep = new THREE.Vector3(idx===0?0.4:-0.4, 0.2, (Math.random()-0.5)*0.3).applyQuaternion(wQuat);
-          f.userData.vel = sep.multiplyScalar(2.0);
+          const visualSpeedScale = this.timeInStage < 25 ? (0.01 + 0.09 * (this.timeInStage/25)) : 0.1;
+          const currentVel = moveDir.clone().multiplyScalar(velocity * visualSpeedScale * SCALE);
+          f.userData.vel = currentVel.add(sep.multiplyScalar(0.8 * SCALE));
           f.userData.angularVel = new THREE.Vector3((Math.random()-0.5)*1.5,(Math.random()-0.5)*1.5,(Math.random()-0.5)*1.5);
           this.debris.push(f);
         });
         if (this.spacecraft) this.spacecraft.visible = true;
         this._setStatus('🛸 Payload Fairing Jettison — Chandrayaan-3 Exposed to Space!', 'Spacecraft visible for the first time');
         this._showToast('🛸 T+190s: Fairing Jettisoned! Chandrayaan-3 enters Space!');
+        
+        // Cinematic camera jump cut - Close Top/Front view to see spacecraft
+        const target = this.renderer.controls.target;
+        const dist = Math.max(this.renderer.camera.position.distanceTo(target), 0.01);
+        const front = new THREE.Vector3(0,0,1).applyQuaternion(this.rocket.quaternion);
+        const up = new THREE.Vector3(0,1,0).applyQuaternion(this.rocket.quaternion);
+        const viewDir = front.add(up.multiplyScalar(1.5)).normalize();
+        this.renderer.camera.position.copy(target).add(viewDir.multiplyScalar(dist));
       }
 
       // ── Core Cutoff T+300 ──
@@ -1253,13 +1538,29 @@ _createKeplerOrbitParams(center, perigee, apogee, angleOffset = 0) {
           this.rocket.remove(this.coreStage); this.renderer.scene.add(this.coreStage);
           this.coreStage.position.copy(wPos); this.coreStage.quaternion.copy(wQuat); this.coreStage.scale.set(SCALE,SCALE,SCALE);
           const sep = new THREE.Vector3(0, -1, 0).applyQuaternion(wQuat);
-          this.coreStage.userData.vel = sep.multiplyScalar(1.5);
+          const currentVel = moveDir.clone().multiplyScalar(velocity * 0.1 * SCALE);
+          this.coreStage.userData.vel = currentVel.add(sep.multiplyScalar(0.4 * SCALE));
           this.coreStage.userData.angularVel = new THREE.Vector3((Math.random()-0.5)*1,(Math.random()-0.5)*1,(Math.random()-0.5)*1);
           this.debris.push(this.coreStage);
         }
         
-        this._setStatus('L110 Core Cutoff — C25 Cryogenic Stage Ignition', 'Upper stage engine starts');
-        this._showToast('🔵 T+300s: L110 Core Separated & C25 Cryogenic Upper Stage Ignited!');
+        this._setStatus('L110 Core Cutoff', 'Coasting phase before C25 ignition');
+        this._showToast('🔵 T+300s: L110 Core Separated! Coasting...');
+        
+        // Cinematic camera jump cut - Side/Bottom view to see core drop
+        const target = this.renderer.controls.target;
+        const dist = Math.max(this.renderer.camera.position.distanceTo(target), 0.01);
+        const side = new THREE.Vector3(1,0,0).applyQuaternion(this.rocket.quaternion);
+        const down = new THREE.Vector3(0,-1,0).applyQuaternion(this.rocket.quaternion);
+        const viewDir = side.add(down.multiplyScalar(0.3)).normalize();
+        this.renderer.camera.position.copy(target).add(viewDir.multiplyScalar(dist));
+      }
+
+      // ── C25 Ignition T+305 ──
+      if (this.timeInStage >= 305 && !this._c25Ignited) {
+        this._c25Ignited = true;
+        this._setStatus('C25 Cryogenic Engine Ignited', 'Upper stage burning');
+        this._showToast('🔥 T+305s: C25 Cryogenic Upper Stage Ignited!');
       }
 
       // ── Spacecraft Separation T+900 ──
@@ -1324,6 +1625,14 @@ _createKeplerOrbitParams(center, perigee, apogee, angleOffset = 0) {
 
         const relPos = rocketWorldPos.clone().sub(earthPos);
         this._stage3AngleOffset = Math.atan2(relPos.z, relPos.x);
+        
+        // We want the apoapsis to point EXACTLY at the Moon (+X axis) by the time TLI happens.
+        // If angleOffset = Math.PI, then apoapsis is at +X and periapsis is at -X.
+        let diff = Math.PI - this._stage3AngleOffset;
+        while(diff > Math.PI) diff -= 2*Math.PI;
+        while(diff < -Math.PI) diff += 2*Math.PI;
+        this._angleOffsetDiff = diff;
+
         this._stage3Perigee = relPos.length();
         
         this.orbitAngle = 0; // Starts exactly at the perigee (current position)
@@ -1342,7 +1651,10 @@ _createKeplerOrbitParams(center, perigee, apogee, angleOffset = 0) {
       }
 
       const currentApogee = this.earthRadius + this.targetApogees[this.currentOrbitIdx];
-      const orbitParams = this._createKeplerOrbitParams(earthPos, this._stage3Perigee, currentApogee, this._stage3AngleOffset);
+      
+      // Removed continuous precession to keep orbits perfectly nested at the same perigee
+      const currentAngleOffset = this._stage3AngleOffset;
+      const orbitParams = this._createKeplerOrbitParams(earthPos, this._stage3Perigee, currentApogee, currentAngleOffset);
       
       const prevAngle = this.orbitAngle;
       const dist = this.rocket.position.distanceTo(earthPos);
@@ -1412,19 +1724,22 @@ _createKeplerOrbitParams(center, perigee, apogee, angleOffset = 0) {
     else if (this.stage === 4) {
       if (!this._stage4Initialized) {
         this._stage4Initialized = true;
-const startPos = this.rocket.position.clone();
-        const destPos = moonPos.clone().add(new THREE.Vector3(0,0, -this.moonRadius - 2.0)); 
-        // Curve sideways on X axis for realistic visual transfer
-        const midPoint = new THREE.Vector3().addVectors(startPos, destPos).multiplyScalar(0.5);
-        midPoint.x -= SCALE * 300; 
+        const startPos = this.rocket.position.clone();
+        // End EXACTLY at the perilune of the first Lunar Orbit
+        const destPos = moonPos.clone().add(new THREE.Vector3(-(this.moonRadius + 0.2), 0, 0)); 
+        // Create an S-curve for the transfer
+        const mid1 = new THREE.Vector3().lerpVectors(startPos, destPos, 0.33);
+        mid1.z += SCALE * 400; // Bow outwards in +Z
+        const mid2 = new THREE.Vector3().lerpVectors(startPos, destPos, 0.66);
+        mid2.z -= SCALE * 400; // Bow inwards in -Z
         
-        this._tliCurve = new THREE.QuadraticBezierCurve3(startPos, midPoint, destPos);
+        this._tliCurve = new THREE.CubicBezierCurve3(startPos, mid1, mid2, destPos);
         this._tliProgress = 0;
         this._initTrail(0xff0000); // Red trail continues
       }
 
       velocity = 10.5;
-      this._tliProgress += delta * 0.08;
+      this._tliProgress += delta * 0.015; // Slow down the TLI progress to give a realistic travel sense
       if (this._tliProgress > 1.0) this._tliProgress = 1.0;
       
       const targetPos = this._tliCurve.getPoint(this._tliProgress);
@@ -1445,8 +1760,8 @@ const startPos = this.rocket.position.clone();
       const distToEarth = this.rocket.position.distanceTo(earthPos);
       this._setStatus(`🌙 Trans-Lunar Injection — Speeding toward Moon`, `Earth: ${(distToEarth*SCALE*500).toFixed(0)} km | Moon: ${(distToMoon*SCALE*500).toFixed(0)} km`);
 
-      // Auto-advance when close enough to Moon
-      if (distToMoon < this.moonRadius + 2.5) {
+      // Auto-advance when curve is fully complete (reaching perilune)
+      if (this._tliProgress >= 1.0) {
         this.stage = 5; this.timeInStage = 0;
         this._setActionBtn(null);
         this._updateProgress(5);
@@ -1454,78 +1769,78 @@ const startPos = this.rocket.position.clone();
       }
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
-    // STAGE 5: Lunar Transfer + Moon Orbit Insertion
-    // ══════════════════════════════════════════════════════════════════════════
     else if (this.stage === 5) {
       if (!this._stage5Initialized) {
         this._stage5Initialized = true;
         
-        this.orbitAngle = 0; // Start at perilune (capture point)
+        this.orbitAngle = 0; // Start exactly at perilune
         this.currentOrbitIdx = 0;
-        this.targetApolunes = [4.0, 2.5, 1.0, 0.2]; // Reduced apolunes for realistic scale
+        this.targetApolunes = [4.5, 3.2, 2.0, 1.0, 0.2]; // 5 orbits
         this._initTrail(0x0088ff); // Blue trail
       }
 
-      if (this.timeInStage < 8) {
-        // Still approaching on TLI
-        velocity = Math.max(1.6, 10.5 - this.timeInStage*1.5);
-        const dir = new THREE.Vector3().subVectors(moonPos, this.rocket.position).normalize();
-        this.rocket.position.addScaledVector(dir, velocity*delta*0.05*SCALE);
-        this.rocket.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dir);
-        this._addTrailPoint(this.rocket.position); // Add trail point during deceleration!
-        if (this._pmPlume) this._pmPlume.visible = true;
+      // Captured into Lunar Orbits!
+      const currentApolune = this.moonRadius + this.targetApolunes[this.currentOrbitIdx];
+      const orbitParams = this._createKeplerOrbitParams(moonPos, this.moonRadius+0.2, currentApolune, Math.PI, true); // true for Polar
+
+      const prevAngle = this.orbitAngle;
+      const dist = this.rocket.position.distanceTo(moonPos);
+      const orbitSpeed = 1.0 / (dist * 1.5); // Keplerian speed
+      this.orbitAngle += delta * orbitSpeed * 8.0;
+
+      const prevCycles = Math.floor(prevAngle / (2*Math.PI));
+      const currCycles = Math.floor(this.orbitAngle / (2*Math.PI));
+      
+      let isBurning = false;
+      const angleMod = this.orbitAngle % (2*Math.PI);
+      
+      // Engine firing at perilune to brake
+      if (angleMod < 0.4 || angleMod > (2*Math.PI - 0.4)) {
+         isBurning = true; 
+         this._cinematicSlowMo = 0.2; 
+         this._cameraShaking = 0.03;
+      }
+      
+      // Additional initial burn for the first few seconds of LOI
+      if (this.timeInStage < 8 && this.currentOrbitIdx === 0 && currCycles === 0) {
+         isBurning = true;
+         this._cinematicSlowMo = 0.2;
+         this._cameraShaking = 0.05;
+      }
+
+      if (currCycles > prevCycles && this.currentOrbitIdx < 4) {
+         this.currentOrbitIdx++;
+         this._showToast(`🔥 Lunar Orbit ${this.currentOrbitIdx} Reduced.`);
+         if (this.currentOrbitIdx === 4) {
+           this._initTrail(0x00ff00); // Green trail for 100x100 km circular
+         }
+      }
+
+      const pos = this._getOrbitPosition(orbitParams, this.orbitAngle);
+      this.rocket.position.copy(pos);
+      this._addTrailPoint(pos);
+
+      const nextPos = this._getOrbitPosition(orbitParams, this.orbitAngle + 0.01);
+      const tangent = new THREE.Vector3().subVectors(nextPos, pos).normalize();
+      this.rocket.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), tangent);
+      
+      if (this._pmPlume) this._pmPlume.visible = isBurning;
+      altitude = (dist - this.moonRadius) / SCALE;
+      velocity = 1.6;
+      
+      if (this.timeInStage < 8 && this.currentOrbitIdx === 0 && currCycles === 0) {
         this._setStatus('🛸 Moon Orbit Insertion — Decelerating...', 'Engine firing against trajectory to brake into orbit');
       } else {
-        // Captured into Lunar Orbits!
-        const currentApolune = this.moonRadius + this.targetApolunes[this.currentOrbitIdx];
-        const orbitParams = this._createKeplerOrbitParams(moonPos, this.moonRadius+0.2, currentApolune, Math.PI);
-
-        const prevAngle = this.orbitAngle;
-        const dist = this.rocket.position.distanceTo(moonPos);
-        const orbitSpeed = 1.0 / (dist * 1.5); // Keplerian speed
-        this.orbitAngle += delta * orbitSpeed * 8.0; // Sped up the orbit significantly!
-
-        const prevCycles = Math.floor(prevAngle / (2*Math.PI));
-        const currCycles = Math.floor(this.orbitAngle / (2*Math.PI));
-        
-        let isBurning = false;
-        const angleMod = this.orbitAngle % (2*Math.PI);
-        if (angleMod < 0.4 || angleMod > (2*Math.PI - 0.4)) {
-           isBurning = true; // Burn at perilune
-           this._cinematicSlowMo = 0.2; // Slow down during burn to show the boost clearly
-           this._cameraShaking = 0.03;
-        }
-        
-        if (currCycles > prevCycles && this.currentOrbitIdx < 3) {
-           this.currentOrbitIdx++;
-           this._showToast(`🔥 Lunar Orbit ${this.currentOrbitIdx} Reduced.`);
-           if (this.currentOrbitIdx === 3) {
-             this._initTrail(0x00ff00); // Green trail for 100x100 km circular
-           }
-        }
-
-        const pos = this._getOrbitPosition(orbitParams, this.orbitAngle);
-        this.rocket.position.copy(pos);
-        this._addTrailPoint(pos);
-
-        const nextPos = this._getOrbitPosition(orbitParams, this.orbitAngle + 0.01);
-        const tangent = new THREE.Vector3().subVectors(nextPos, pos).normalize();
-        this.rocket.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), tangent);
-        
-        if (this._pmPlume) this._pmPlume.visible = isBurning;
-        altitude = (dist - this.moonRadius) / SCALE;
-        velocity = 1.6;
         this._setStatus(`🌙 Lunar Orbit Achieved! (${Math.round(altitude*60)} km × 100 km)`, 'Orbiting the Moon — preparing for lander separation');
+      }
 
-        if (this.currentOrbitIdx === 3 && currCycles > prevCycles) {
-          this.stage = 6; this.timeInStage = 0;
-          const btn = document.getElementById('hud-btn-action');
-          if (!btn || btn.style.display === 'none') {
-            this._setActionBtn('🚀 Separate Vikram Lander');
-            this._updateProgress(6);
-            this._showToast('🌙 Lunar Orbit Achieved! Ready to deploy Vikram Lander.');
-          }
+      if (this.currentOrbitIdx === 4 && currCycles > prevCycles) {
+        this.stage = 6; this.timeInStage = 0;
+        const btn = document.getElementById('hud-btn-action');
+        if (!btn || btn.style.display === 'none') {
+          this._setActionBtn('🚀 Separate Vikram Lander');
+          this._updateProgress(6);
+          this._showToast('🌙 Lunar Orbit Achieved! Ready to deploy Vikram Lander.');
         }
       }
     }
@@ -1536,7 +1851,7 @@ const startPos = this.rocket.position.clone();
     else if (this.stage === 6) {
       velocity = 1.6;
       
-      const orbitParams = this._createKeplerOrbitParams(moonPos, this.moonRadius+0.2, this.moonRadius+0.2, Math.PI);
+      const orbitParams = this._createKeplerOrbitParams(moonPos, this.moonRadius+0.2, this.moonRadius+0.2, Math.PI, true);
       const dist = this.moonRadius+0.2;
       const orbitSpeed = 1.0 / (dist * 2.0);
       this.orbitAngle += delta * orbitSpeed * 2.5;
@@ -1559,7 +1874,7 @@ const startPos = this.rocket.position.clone();
     else if (this.stage === 7) {
       if (!this._stage7Initialized) {
         this._stage7Initialized = true;
-        this._deboostOrbit = this._createKeplerOrbitParams(moonPos, this.moonRadius+0.06, this.moonRadius+0.2, Math.PI);
+        this._deboostOrbit = this._createKeplerOrbitParams(moonPos, this.moonRadius+0.06, this.moonRadius+0.2, Math.PI, true);
         this._initTrail(0x00ffff); // Cyan trail
       }
 
@@ -1607,9 +1922,9 @@ const startPos = this.rocket.position.clone();
         this.stage = 8; this.timeInStage = 0;
         const btn = document.getElementById('hud-btn-action');
         if (!btn || btn.style.display === 'none') {
-          this._setActionBtn('⬇️ Powered Descent');
+          this._setActionBtn('🏁 Start Soft Landing');
           this._updateProgress(8);
-          this._showToast('✅ De-boost complete! Ready for Powered Descent.');
+          this._showToast('✅ De-boost complete! Ready for Soft Landing.');
         }
       }
     }
@@ -1645,6 +1960,19 @@ const startPos = this.rocket.position.clone();
     else if (this.stage === 9) {
       if (!this._stage9Initialized) {
         this._stage9Initialized = true;
+        
+        // Reset time scale for realistic, slow landing
+        this._fastForward = 1.0;
+        this._autoFastForward = 1.0;
+        this._actualAutoFF = 1.0;
+        this._cinematicSlowMo = 1.0;
+        ['ff-1x','ff-5x','ff-10x'].forEach(id => {
+          const el = document.getElementById(id);
+          if(el) el.classList.remove('active');
+        });
+        const act = document.getElementById('ff-1x');
+        if(act) act.classList.add('active');
+
         // Detach PM and leave it in orbit while Vikram descends
         if (this.propulsionModule && this.propulsionModule.parent === this.spacecraft) {
            const wPos = new THREE.Vector3(), wQuat = new THREE.Quaternion();
@@ -1656,70 +1984,255 @@ const startPos = this.rocket.position.clone();
            this.propulsionModule.quaternion.copy(wQuat);
            this.propulsionModule.scale.set(SCALE,SCALE,SCALE);
         }
+        
+        this._landerState = {
+           angle: this.orbitAngle,
+           radius: this.orbitRadius,
+           hVel: 1.6, // horizontal velocity km/s
+           vVel: 0,   // vertical velocity km/s
+           pitch: Math.PI / 2 // starts horizontal
+        };
+        
+        // Generate High-Res Lunar Regolith Patch for Touchdown
+        if (!this.localRegolith) {
+           const geo = new THREE.PlaneGeometry(0.4, 0.4, 128, 128);
+           const posAttr = geo.attributes.position;
+           for(let i=0; i<posAttr.count; i++) {
+             const x = posAttr.getX(i); const y = posAttr.getY(i);
+             let z = (Math.random()-0.5)*0.0008; 
+             // Craters
+             const c1 = Math.sqrt((x-0.05)**2 + (y-0.05)**2); if (c1 < 0.03) z -= (0.03 - c1)*0.1;
+             const c2 = Math.sqrt((x+0.08)**2 + (y-0.02)**2); if (c2 < 0.05) z -= (0.05 - c2)*0.08;
+             const c3 = Math.sqrt((x-0.02)**2 + (y+0.07)**2); if (c3 < 0.02) z -= (0.02 - c3)*0.15;
+             // Rocks
+             if (Math.random() < 0.005) z += Math.random() * 0.002;
+             posAttr.setZ(i, z);
+           }
+           geo.computeVertexNormals();
+           const mat = new THREE.MeshStandardMaterial({color: 0x666666, roughness: 0.95, metalness: 0.1, flatShading: true});
+           this.localRegolith = new THREE.Mesh(geo, mat);
+           this.renderer.scene.add(this.localRegolith);
+        }
       }
-      velocity = Math.max(0, 1.6 - this.timeInStage*0.15);
-      this.orbitRadius -= delta*0.25;
+      
+      const surfaceRadius = this.moonRadius - 0.0141;
 
-      if (this.orbitRadius <= this.moonRadius - 0.0141) {
-        this.orbitRadius = this.moonRadius - 0.0141;
-        velocity = 0; altitude = 0;
+      // Lock regolith patch during final vertical descent
+      if (this.stage === 9 && this.localRegolith) {
+        if (this.timeInStage / 25.0 < 0.85) {
+           const upD = new THREE.Vector3().subVectors(this.rocket.position, moonPos).normalize();
+           const sPos = moonPos.clone().add(upD.multiplyScalar(surfaceRadius));
+           this.localRegolith.position.copy(sPos);
+           this.localRegolith.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1), upD);
+        }
+      }
+      
+      const MAX_LANDING_TIME = 25.0; // 25 simulation seconds
+      const progress = Math.min(this.timeInStage / MAX_LANDING_TIME, 1.0);
+      
+      if (progress < 0.6) {
+         // Rough Braking Phase: Rapidly kill horizontal velocity
+         const p = progress / 0.6;
+         this._landerState.hVel = 1.6 * (1.0 - Math.pow(p, 1.5));
+         this._landerState.vVel = -0.5 * Math.sin(p * Math.PI); // Dip in altitude
+         this._landerState.pitch = (Math.PI / 2) * (1.0 - p*0.1);
+      } else if (progress < 0.85) {
+         // Attitude Hold Phase: Pitch up to vertical
+         const p = (progress - 0.6) / 0.25;
+         this._landerState.hVel = 0.05 * (1.0 - p); // Drift
+         this._landerState.vVel = -0.15 * (1.0 - p*0.5);
+         this._landerState.pitch = (Math.PI / 2) * 0.9 * (1.0 - p);
+      } else {
+         // Vertical Descent Phase: Straight down
+         const p = (progress - 0.85) / 0.15;
+         this._landerState.hVel = 0;
+         this._landerState.vVel = -0.05 * (1.0 - p);
+         this._landerState.pitch = 0;
+      }
+      
+      
+      this._landerState.angle += delta * (this._landerState.hVel * 0.05); // Visual speed scale
+      this._landerState.radius += delta * (this._landerState.vVel * 0.05);
+      
+      if (this._landerState.radius <= surfaceRadius || progress >= 1.0) {
+         this._landerState.radius = surfaceRadius;
+         this._landerState.hVel = 0;
+         this._landerState.vVel = 0;
+         this._landerState.pitch = 0;
+      }
+      
+      this.orbitRadius = this._landerState.radius;
+      this.orbitAngle = this._landerState.angle;
+      velocity = Math.max(0, this._landerState.hVel + Math.abs(this._landerState.vVel));
+      altitude = (this.orbitRadius - surfaceRadius) * 100;
 
+      this.rocket.position.set(
+        moonPos.x + Math.cos(this.orbitAngle + Math.PI)*this.orbitRadius,
+        moonPos.y - Math.sin(this.orbitAngle)*this.orbitRadius,
+        moonPos.z
+      );
+
+      if (this.orbitRadius <= surfaceRadius) {
         if (!this._landingDone) {
           this._landingDone = true;
-          this._setStatus('🇮🇳 TOUCHDOWN CONFIRMED! India on the Moon! — South Pole, Aug 23, 2023', 'Vikram Lander safely landed at Shiv Shakti Point');
-          this._showToast('🇮🇳 CHANDRAYAAN-3 LANDS ON THE MOON! Jai Hind! 🌙');
+          this._setStatus('✅ 15. Touchdown (Soft Landing)', 'Vikram Lander Successfully Landed on the Moon');
+          this._showToast('🇮🇳 Vikram Lander Successfully Landed on the Moon');
           // Screen flash for celebration
           if (this.flashEl) {
             this.flashEl.classList.add('active');
             setTimeout(() => this.flashEl?.classList.remove('active'), 500);
           }
-          this._cameraShaking = 1.5;
+          this._cameraShaking = 0.5; // slight bump on landing
+          setTimeout(() => this._cameraShaking = 0, 500);
+          
+          this.landerPlumes.forEach(p => { p.visible = false; }); // Engines shut down immediately
+          if (this.engineLight) this.engineLight.intensity = 0;
+          this._stopRumble();
+          this._playBeep(800); setTimeout(() => this._playBeep(1200), 200);
+          
+          // Leg compression animation
+          if (this.landerLegs) {
+              this.landerLegs.forEach(leg => {
+                  leg.scale.y = 1.0;
+                  let t = 0;
+                  const interval = setInterval(() => {
+                      t += 0.05;
+                      if (t <= 0.5) leg.scale.y = 1.0 - (t/0.5)*0.3; // compress to 0.7
+                      else if (t <= 1.0) leg.scale.y = 0.7 + ((t-0.5)/0.5)*0.2; // rebound to 0.9
+                      else clearInterval(interval);
+                  }, 16);
+              });
+          }
+          
+          // Dust burst
+          const upDir = new THREE.Vector3().subVectors(this.rocket.position, moonPos).normalize();
+          for(let i=0; i<30; i++) {
+              const dustPos = this.rocket.position.clone().addScaledVector(upDir, -0.01);
+              const drift = new THREE.Vector3((Math.random()-0.5)*4, 0.5, (Math.random()-0.5)*4).normalize();
+              this._spawnParticles(dustPos, drift, true, true);
+          }
+          
           this._updateProgress(9);
+          
           setTimeout(() => {
             this.stage = 10; this.timeInStage = 0;
-            this._setActionBtn('🤖 Deploy Pragyan Rover');
+            this._setActionBtn('🤖 Ramp deployment preparation begins...');
             this._updateProgress(10);
-          }, 3000);
+          }, 4000);
         }
-      } else {
-        altitude = (this.orbitRadius - (this.moonRadius - 0.0141)) * 100;
-        this.orbitAngle += delta*0.05;
-
-        // Thruster dust during final descent
-        if (this.orbitRadius < this.moonRadius + 0.05) {
-          const upDir = new THREE.Vector3().subVectors(this.rocket.position, moonPos).normalize();
-          for (let i = 0; i < 3; i++) {
-            const dustPos = this.rocket.position.clone().addScaledVector(upDir, -0.01);
-            const drift = new THREE.Vector3((Math.random()-0.5)*2, 0.2, (Math.random()-0.5)*2).normalize();
-            this._spawnParticles(dustPos, drift, true, true);
-          }
-          // Thruster plumes visible
-          this.plumes.forEach(p => { p.visible = Math.random() > 0.5; });
-          if (this.engineLight) { this.engineLight.intensity = 1 + Math.random()*1.5; this.engineLight.color.setHex(0x88ccff); }
-        }
-
-        const thrusterFraction = 1 - Math.min(this.timeInStage/8, 1);
-        this._setStatus(`⬇️ Powered Descent — ${Math.round(altitude)} km altitude`, `Speed: ${velocity.toFixed(1)} km/s | Thrusters at ${Math.round(thrusterFraction*100)}%`);
-      }
-
-      this.rocket.position.set(
-        moonPos.x + Math.cos(this.orbitAngle)*this.orbitRadius,
-        moonPos.y,
-        moonPos.z + Math.sin(this.orbitAngle)*this.orbitRadius
-      );
-
-      if (this.orbitRadius <= this.moonRadius - 0.0141) {
         const upDir2 = new THREE.Vector3().subVectors(this.rocket.position, moonPos).normalize();
         this.rocket.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), upDir2);
       } else {
-        const progress9 = Math.min(this.timeInStage/10, 1);
-        const orbitDir9 = new THREE.Vector3(-Math.sin(this.orbitAngle), 0, Math.cos(this.orbitAngle)).normalize();
+        // Thruster dust and flames during final descent
+        let simulatedAlt = (this.orbitRadius - surfaceRadius) * 20000; // rough meter scale
+        
+        if (!this.lastBeepAlt) this.lastBeepAlt = 1000;
+        if (simulatedAlt <= 50 && this.lastBeepAlt > 50) { this._playBeep(1500); this.lastBeepAlt = 50; }
+        if (simulatedAlt <= 20 && this.lastBeepAlt > 20) { this._playBeep(1600); this.lastBeepAlt = 20; }
+        if (simulatedAlt <= 10 && this.lastBeepAlt > 10) { this._playBeep(1700); this.lastBeepAlt = 10; }
+        
+        // Thrust power based on phase (progress)
+        let thrustBase = 1.0;
+        if (progress > 0.85) {
+            const remainingProg = Math.max(0, (1.0 - progress) / 0.15); // 1.0 -> 0.0
+            thrustBase = 0.2 + remainingProg * 0.8; 
+        }
+        
+        this._playRumble(0.3 * thrustBase, 100 + thrustBase * 200);
+        
+        this.landerPlumes.forEach(p => { 
+            p.visible = true; 
+            const flicker = 0.8 + Math.random() * 0.5;
+            const s = thrustBase * flicker;
+            // Dramatically increased flame size
+            p.scale.set(s*3.0, s*6.0, s*3.0);
+        });
+        if (this.engineLight) { 
+            this.engineLight.intensity = thrustBase * (2.5 + Math.random()*1.5); 
+            this.engineLight.color.setHex(0xffaa55); // More fiery orange/yellow
+        }
+
+        if (this.orbitRadius < this.moonRadius + 0.05) {
+          const upDir = new THREE.Vector3().subVectors(this.rocket.position, moonPos).normalize();
+          const dustIntense = simulatedAlt < 50;
+          // Huge dust/fog cloud
+          for (let i = 0; i < (dustIntense ? 25 : 8); i++) {
+            const dustPos = this.rocket.position.clone().addScaledVector(upDir, -0.015);
+            const speed = dustIntense ? 5.0 : 2.0;
+            const drift = new THREE.Vector3((Math.random()-0.5)*speed, 0.1 + Math.random()*0.1, (Math.random()-0.5)*speed).normalize();
+            this._spawnParticles(dustPos, drift, true, true);
+          }
+        }
+
+        if (progress >= 0.85) {
+            const remainingProg = Math.max(0, (1.0 - progress) / 0.15); // 1.0 -> 0.0
+            simulatedAlt = remainingProg * 150; 
+            
+            let altDisplay = 150;
+            if (simulatedAlt <= 1) altDisplay = 'Touchdown';
+            else if (simulatedAlt <= 10) altDisplay = 10;
+            else if (simulatedAlt <= 20) altDisplay = 20;
+            else if (simulatedAlt <= 50) altDisplay = 50;
+            else if (simulatedAlt <= 100) altDisplay = 100;
+            
+            this._setStatus(`⬇️ 14. Vertical Descent`, `Altitude: ${altDisplay}${altDisplay==='Touchdown'?'':' m'} | Speed: ${velocity.toFixed(2)} m/s`);
+        } else if (progress >= 0.6) {
+            this._setStatus(`⬇️ Attitude Hold / Fine Braking`, `Speed: ${velocity.toFixed(2)} km/s`);
+        } else {
+            this._setStatus(`⬇️ Rough Braking Phase`, `Speed: ${velocity.toFixed(2)} km/s`);
+        }
+
+        // Polar orbit velocity direction
+        const orbitDir9 = new THREE.Vector3(Math.sin(this.orbitAngle), -Math.cos(this.orbitAngle), 0).normalize();
         const upDir9    = new THREE.Vector3().subVectors(this.rocket.position, moonPos).normalize();
-        const lerpDir   = new THREE.Vector3().lerpVectors(orbitDir9, upDir9, progress9).normalize();
-        this.rocket.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), lerpDir);
-        const exDir = lerpDir.clone().negate();
+        
+        // Pitch smoothly between orbit velocity direction and vertical orientation
+        const pitchQuat = new THREE.Quaternion().setFromAxisAngle(
+            new THREE.Vector3().crossVectors(upDir9, orbitDir9).normalize(),
+            this._landerState.pitch
+        );
+        const finalDir = upDir9.clone().applyQuaternion(pitchQuat);
+        this.rocket.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), finalDir);
+        
+        const exDir = finalDir.clone().negate();
         const exPos = this.rocket.position.clone().addScaledVector(exDir, -0.014);
         if (Math.random() < 0.7) this._spawnParticles(exPos, exDir, false);
+      }
+
+      // Continuous cinematic camera tracking during descent
+      if (!this._landingDone) {
+        const upCam = new THREE.Vector3(0,1,0).applyQuaternion(this.rocket.quaternion);
+        const frontCam = new THREE.Vector3(0,0,1).applyQuaternion(this.rocket.quaternion);
+        const rightCam = new THREE.Vector3(1,0,0).applyQuaternion(this.rocket.quaternion);
+        
+        let viewDir, camDist;
+        if (progress < 0.3) {
+            // Mission Control Tracking (far side view)
+            viewDir = frontCam.clone().multiplyScalar(0.2).add(rightCam.clone().multiplyScalar(1.0)).normalize();
+            camDist = 0.25;
+        } else if (progress < 0.6) {
+            // Lander Bottom Camera (looking down)
+            viewDir = upCam.clone().multiplyScalar(-1.0).add(frontCam.clone().multiplyScalar(0.2)).normalize();
+            camDist = 0.08;
+        } else if (progress < 0.85) {
+            // Side Profile (watching pitch over)
+            viewDir = rightCam.clone().multiplyScalar(1.0).add(upCam.clone().multiplyScalar(0.2)).normalize();
+            camDist = 0.12;
+        } else {
+            // Final Touchdown Close-up
+            viewDir = frontCam.clone().multiplyScalar(1.0).add(rightCam.clone().multiplyScalar(0.4)).add(upCam.clone().multiplyScalar(-0.15)).normalize();
+            camDist = 0.07;
+        }
+        
+        const targetCamPos = this.rocket.position.clone().add(viewDir.multiplyScalar(camDist)); 
+        this.renderer.camera.position.lerp(targetCamPos, delta * 3.0);
+        this.renderer.controls.target.copy(this.rocket.position);
+        
+        if (progress < 0.95 && this.orbitRadius > surfaceRadius) {
+           let thrustBase = 1.0;
+           if (progress > 0.85) { thrustBase = 0.2 + ((1.0-progress)/0.15)*0.8; }
+           this._cameraShaking = 0.04 * thrustBase;
+        }
       }
     }
 
@@ -1730,9 +2243,9 @@ const startPos = this.rocket.position.clone();
       velocity = 0; altitude = 0;
       this.orbitRadius = this.moonRadius - 0.0141;
       this.rocket.position.set(
-        moonPos.x + Math.cos(this.orbitAngle)*this.orbitRadius,
-        moonPos.y,
-        moonPos.z + Math.sin(this.orbitAngle)*this.orbitRadius
+        moonPos.x + Math.cos(this.orbitAngle + Math.PI)*this.orbitRadius,
+        moonPos.y - Math.sin(this.orbitAngle)*this.orbitRadius,
+        moonPos.z
       );
       const upDir10 = new THREE.Vector3().subVectors(this.rocket.position, moonPos).normalize();
       this.rocket.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), upDir10);
@@ -1743,29 +2256,48 @@ const startPos = this.rocket.position.clone();
       }
 
       const t10 = this.timeInStage;
+      
       if (t10 < 3.0) {
         // Deploy ramp
         const progress = t10/3.0;
         if (this.ramp) this.ramp.rotation.x = -Math.PI/2 + progress*(Math.PI/2+Math.PI/6);
-        this._setStatus('🤖 Deploying Ramp — Pragyan Rover preparing to roll out', 'Ramp unfolding from Vikram Lander');
-      } else if (t10 < 8.0) {
-        // Rover rolls down
-        if (this.ramp) this.ramp.rotation.x = Math.PI/6;
-        const progress = (t10-3)/5;
+        // Make sure rover is at starting position correctly aligned with ramp start
         if (this.pragyanRover) {
-          this.pragyanRover.position.z = 0.015 + progress*0.037;
-          this.pragyanRover.position.y = -0.01 - progress*0.018;
+           this.pragyanRover.position.set(0, -0.004, 0.0095);
+           this.pragyanRover.rotation.x = 0;
+        }
+        this._setStatus('🤖 Deploying Ramp — Pragyan Rover preparing to roll out', 'Ramp unfolding from Vikram Lander');
+      } else if (t10 < 15.0) {
+        // Rover rolls down (Slow, careful descent taking 12 seconds instead of 5)
+        if (this.ramp) this.ramp.rotation.x = Math.PI/6;
+        const progress = (t10-3)/12;
+        if (this.pragyanRover) {
+          this.pragyanRover.position.z = 0.0095 + progress*0.0425;
+          this.pragyanRover.position.y = -0.004 - progress*0.0131; // Aligned slide down to surface
           this.pragyanRover.rotation.x = Math.PI/6;
         }
-        this._setStatus('🤖 Pragyan Rover rolling down the ramp...', 'India\'s first lunar rover touches Moon surface');
-      } else if (t10 < 20.0) {
-        // Rover explores
-        const progress = (t10-8)/12;
+        if (this.roverWheels) {
+          this.roverWheels.forEach(w => w.rotation.x -= delta * 1.5); // Animate wheels!
+        }
+        this._setStatus('🤖 Pragyan Rover rolling down the ramp...', 'India\'s first lunar rover carefully touching down on the Moon');
+      } else if (t10 < 35.0) {
+        // Rover explores and deploys panel
+        const progress = (t10-15)/20;
         if (this.pragyanRover) {
-          this.pragyanRover.position.z = 0.052 + progress*0.07;
-          this.pragyanRover.position.y = -0.028;
+          this.pragyanRover.position.z = 0.052 + progress*0.1;
+          this.pragyanRover.position.y = -0.0171; // rests precisely on surface
           this.pragyanRover.rotation.x = 0;
         }
+        if (this.roverWheels) {
+          this.roverWheels.forEach(w => w.rotation.x -= delta * 1.0); // Wheels keep turning
+        }
+        
+        // Solar panel deploys during the first 5 seconds of exploration
+        if (this.roverSolarPanel) {
+          const deployProg = Math.min((t10-15)/5.0, 1.0);
+          this.roverSolarPanel.rotation.x = -0.6 * deployProg;
+        }
+        
         // Dust from wheels
         if (Math.random() < 0.25 && this.pragyanRover) {
           const wPos = new THREE.Vector3();
@@ -1794,7 +2326,20 @@ const startPos = this.rocket.position.clone();
       let upDir = this.launchDir.clone().applyQuaternion(this.renderer.earth.quaternion);
       if (this.stage >= 3) upDir = new THREE.Vector3(0,1,0).applyQuaternion(this.rocket.quaternion);
 
-      const centerTarget = newRocketPos.clone().add(upDir.multiplyScalar(0.4*SCALE));
+      let centerTarget = newRocketPos.clone().add(upDir.multiplyScalar(0.4*SCALE));
+      
+      // After launch stages, track the spacecraft/rover instead of the main rocket offset
+      if (this.stage >= 3 && this.spacecraft && this.spacecraft.visible) {
+        centerTarget = new THREE.Vector3();
+        if (this.stage >= 10 && this.pragyanRover) {
+           // In Stage 10/11, track the Rover directly as it explores!
+           this.pragyanRover.getWorldPosition(centerTarget);
+        } else {
+           // Otherwise track the Lander/Spacecraft
+           this.spacecraft.getWorldPosition(centerTarget);
+        }
+      }
+      
       this.renderer.controls.target.copy(centerTarget);
       this.renderer.camera.position.add(posDiff);
 

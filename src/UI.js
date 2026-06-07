@@ -3,7 +3,7 @@
  * Manages all UI interactions: search bar, tooltip, side panel, bottom controls.
  */
 
-import { SPECTRAL_TYPES, formatDistance, formatRA, formatDec, getStarDescription } from './StarData.js';
+import { SPECTRAL_TYPES, CONSTELLATIONS, formatDistance, formatRA, formatDec, getStarDescription } from './StarData.js';
 
 const PLANET_INFO = {
   'Sun': { temp: '5,778 K', type: 'Yellow Dwarf Star', spec: 'G2V', desc: 'The star at the center of the Solar System.', mass: '1.989 × 10^30 kg', radius: '696,340 km', gravity: '274 m/s²', orbit: '230 million years', day: '27 days', wiki: 'https://en.wikipedia.org/wiki/Sun', img: '/textures/sun.png' },
@@ -40,6 +40,63 @@ export class UI {
     this.$panelTemp      = document.getElementById('panel-temp');
     this.$panelMagnitude = document.getElementById('panel-magnitude');
     this.$panelDesc      = document.getElementById('panel-description');
+    
+    // Ownership block
+    this.$starOwnershipBlock = document.getElementById('star-ownership-block');
+    this.$starOwnerInfo      = document.getElementById('star-owner-info');
+    this.$starOwnerName      = document.getElementById('star-owner-name');
+    this.$starOwnerMessage   = document.getElementById('star-owner-message');
+    this.$starRegisterBtnCon = document.getElementById('star-register-btn-container');
+    this.$btnRegisterStar    = document.getElementById('btn-register-star');
+    
+    // Registration Modal
+    this.$registerModal      = document.getElementById('register-star-modal');
+    this.$registerTarget     = document.getElementById('register-star-target');
+    this.$registerInputName  = document.getElementById('register-input-name');
+    this.$registerInputMsg   = document.getElementById('register-input-message');
+    this.$btnCancelRegister  = document.getElementById('btn-cancel-register');
+    this.$btnSubmitRegister  = document.getElementById('btn-submit-register');
+
+    this.$starLiveAuthCon    = document.getElementById('star-live-auth-container');
+    this.$starPasskeyInput   = document.getElementById('star-passkey-input');
+    this.$btnLiveToGalaxy    = document.getElementById('btn-live-to-galaxy');
+    this.$starAuthStatus     = document.getElementById('star-auth-status');
+
+    if (this.$btnLiveToGalaxy) {
+      this.$btnLiveToGalaxy.addEventListener('click', async () => {
+        const key = this.$starPasskeyInput.value;
+        if (!key) {
+           this.$starAuthStatus.textContent = 'Only registered user can access';
+           this.$starAuthStatus.classList.remove('hidden');
+           return;
+        }
+        
+        try {
+          this.$starAuthStatus.textContent = 'Verifying...';
+          this.$starAuthStatus.classList.remove('hidden');
+          const res = await fetch(`/api/mystar/verify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ key })
+          });
+          const data = await res.json();
+          if (res.ok && (String(data.star_id) === String(this.currentStar?.id) || String(data.unique_id) === String(this.currentStar?.id))) {
+             this.$starAuthStatus.classList.add('hidden');
+             this.$starLiveAuthCon.classList.add('hidden');
+             if (this.$panelViewStarBtn) this.$panelViewStarBtn.classList.remove('hidden');
+          } else {
+             this.$starAuthStatus.textContent = 'Only registered user can access';
+             this.$starAuthStatus.classList.remove('hidden');
+          }
+        } catch (e) {
+             this.$starAuthStatus.textContent = 'Network error';
+             this.$starAuthStatus.classList.remove('hidden');
+        }
+      });
+    }
+
+    this.registeredStars = {};
+
     this.$panelGlow       = document.getElementById('panel-star-glow');
     this.$panelSatImgCard = document.getElementById('panel-sat-img-card');
     this.$panelPlanetImg  = document.getElementById('panel-planet-img');      // satellite img (inside card)
@@ -73,6 +130,7 @@ export class UI {
     this.$btnAutoRot     = document.getElementById('btn-autorotate');
     this.$btnGrid        = document.getElementById('btn-grid');
     this.$btnStars       = document.getElementById('btn-stars');
+    this.$btnConstellations = document.getElementById('btn-constellations');
     this.$btnDeselect    = document.getElementById('btn-deselect');
     this.$btnMission     = document.getElementById('btn-mission');
     this.$loadingScreen  = document.getElementById('loading-screen');
@@ -107,7 +165,7 @@ export class UI {
     this.onGridToggle = null;  // () => void
   }
 
-  init(stars, planets) {
+  async init(stars, planets) {
     this.stars = stars;
     this.planets = planets || [];
     this.$starCountNum.textContent = stars.length.toLocaleString();
@@ -116,6 +174,16 @@ export class UI {
     this._setupPanelClose();
     this._setupBottomControls();
     this._setupKeyboard();
+    this._setupRegistration();
+
+    try {
+      const res = await fetch('/api/stars');
+      if (res.ok) {
+        this.registeredStars = await res.json();
+      }
+    } catch (e) {
+      console.error('Failed to fetch registered stars:', e);
+    }
   }
 
   /* ---- Loading ---- */
@@ -188,7 +256,9 @@ export class UI {
   }
 
   closeMapModal() {
-    this.$mapModal.classList.add('hidden');
+    if (this.$mapModal) {
+      this.$mapModal.classList.add('hidden');
+    }
   }
 
   /* ---- Tooltip ---- */
@@ -217,6 +287,14 @@ export class UI {
     this.$tooltipTemp.textContent = tempVal;
     this.$tooltipType.textContent = typeVal;
     this.$tooltipType.style.color = star.color || '#00d4ff';
+
+    // Show registration status
+    const isRegistered = this.registeredStars && this.registeredStars[star.id];
+    if (isRegistered) {
+      this.$tooltipName.innerHTML = `⭐ <span style="color:#ffd700">${isRegistered.starName || star.name}</span>`;
+      this.$tooltipType.textContent = 'Registered Star';
+      this.$tooltipType.style.color = '#ffd700';
+    }
 
     // Position near cursor
     const margin = 16;
@@ -281,6 +359,7 @@ export class UI {
       this.$panelPlanetImgP.classList.remove('hidden');
       this.$panelGlow.classList.add('hidden');
       if (this.$panelViewStarBtn) this.$panelViewStarBtn.classList.add('hidden');
+      if (this.$starOwnershipBlock) this.$starOwnershipBlock.classList.add('hidden');
       
       this.$panelWikiLink.href = pInfo.wiki;
       this.$panelWikiLink.classList.remove('hidden');
@@ -334,12 +413,13 @@ export class UI {
       this.$panelMagBadge.textContent  = codeStr;
       this.$panelMagBadge.style.fontFamily = 'monospace';
       this.$panelMagBadge.style.letterSpacing = '1px';
+
+      if (this.$starOwnershipBlock) this.$starOwnershipBlock.classList.add('hidden');
     } else {
       // Star: hide sat card and planet img, show glow
       this.$panelSatImgCard.classList.add('hidden');
       this.$panelPlanetImgP.classList.add('hidden');
       this.$panelGlow.classList.remove('hidden');
-      if (this.$panelViewStarBtn) this.$panelViewStarBtn.classList.remove('hidden');
 
       const badgeType = star.type || 'A';
       this.$panelTypeBadge.textContent = star.type ? `${star.type}-type` : '—';
@@ -359,6 +439,38 @@ export class UI {
       this.$panelGlow.style.background = `radial-gradient(circle, white 0%, ${star.color || '#cce8ff'} 30%, rgba(0,0,0,0) 70%)`;
       this.$panelGlow.style.boxShadow  = `0 0 40px 20px ${star.color || '#cce8ff'}55`;
       this.$panelMagBadge.textContent  = `mag ${star.mag?.toFixed(2) || '—'}`;
+
+      // Reset auth state
+      if (this.$starLiveAuthCon) {
+        this.$starLiveAuthCon.classList.remove('hidden');
+      }
+      if (this.$starPasskeyInput) {
+        this.$starPasskeyInput.value = '';
+      }
+      if (this.$starAuthStatus) {
+        this.$starAuthStatus.classList.add('hidden');
+        this.$starAuthStatus.textContent = '';
+      }
+      if (this.$panelViewStarBtn) {
+        this.$panelViewStarBtn.classList.add('hidden'); // hidden until authorized!
+      }
+
+      // Star Registry Ownership
+      if (this.$starOwnershipBlock) {
+        this.$starOwnershipBlock.classList.remove('hidden');
+        const reg = this.registeredStars && this.registeredStars[star.id];
+        if (reg) {
+          // It's owned!
+          this.$starOwnerInfo.classList.remove('hidden');
+          this.$starOwnerName.textContent = reg.owner;
+          this.$starOwnerMessage.textContent = reg.message ? `"${reg.message}"` : '';
+          this.$starRegisterBtnCon.classList.add('hidden');
+        } else {
+          // Available!
+          this.$starOwnerInfo.classList.add('hidden');
+          this.$starRegisterBtnCon.classList.remove('hidden');
+        }
+      }
     }
     
     // Distance
@@ -413,6 +525,104 @@ export class UI {
         this._hideSatelliteDropdown();
       }
     });
+
+    // Star Search Mode & Filter Setup
+    const modeSelect = document.getElementById('search-mode-select');
+    const inputContainer = document.getElementById('search-input-container');
+    const namedSelect = document.getElementById('named-stars-select');
+    const conSelect = document.getElementById('constellation-select');
+
+    if (modeSelect) {
+      modeSelect.addEventListener('change', () => {
+        const mode = modeSelect.value;
+        
+        inputContainer.classList.add('hidden');
+        namedSelect.classList.add('hidden');
+        conSelect.classList.add('hidden');
+
+        if (mode === 'all') {
+          inputContainer.classList.remove('hidden');
+          if (this.renderer) {
+            this.renderer.filterStars('all', 'all');
+            this.renderer.exitTelescopeMode();
+          }
+          const btnExit = document.getElementById('btn-exit-telescope');
+          if (btnExit) btnExit.classList.add('hidden');
+        } else if (mode === 'named') {
+          namedSelect.classList.remove('hidden');
+          // If first time, populate named stars
+          if (namedSelect.options.length <= 1 && this.stars) {
+            const namedStars = this.stars.filter(s => s.isNamed).sort((a,b) => a.name.localeCompare(b.name));
+            namedStars.forEach(s => {
+              const opt = document.createElement('option');
+              opt.value = s.id;
+              opt.textContent = s.name;
+              namedSelect.appendChild(opt);
+            });
+          }
+          if (this.renderer) {
+            this.renderer.filterStars('named', 'all');
+            this.renderer.exitTelescopeMode();
+          }
+          const btnExit = document.getElementById('btn-exit-telescope');
+          if (btnExit) btnExit.classList.add('hidden');
+        } else if (mode === 'constellation') {
+          conSelect.classList.remove('hidden');
+          // If first time, populate constellations
+          if (conSelect.options.length <= 1 && typeof CONSTELLATIONS !== 'undefined') {
+            const sortedCons = Object.keys(CONSTELLATIONS).sort((a,b) => CONSTELLATIONS[a].localeCompare(CONSTELLATIONS[b]));
+            sortedCons.forEach(con => {
+              const opt = document.createElement('option');
+              opt.value = con;
+              opt.textContent = CONSTELLATIONS[con];
+              conSelect.appendChild(opt);
+            });
+          }
+          // Default: show stars of any constellation or 'all' if conSelect value is empty
+          if (this.renderer) this.renderer.filterStars('constellation', conSelect.value || 'all');
+        }
+      });
+    }
+
+    if (namedSelect) {
+      namedSelect.addEventListener('change', () => {
+        const starId = namedSelect.value;
+        if (!starId || !this.stars) return;
+        const star = this.stars.find(s => String(s.id) === String(starId));
+        if (star && this.onStarClick) {
+          this.onStarClick(star);
+          if (this.renderer) this.renderer.flyTo(star, 2500);
+        }
+      });
+    }
+
+    if (conSelect) {
+      conSelect.addEventListener('change', () => {
+        const conVal = conSelect.value;
+        if (this.renderer && conVal && conVal !== 'all') {
+          this.renderer.filterStars('constellation', conVal);
+          this.renderer.enterTelescopeMode(conVal);
+          const btnExit = document.getElementById('btn-exit-telescope');
+          if (btnExit) btnExit.classList.remove('hidden');
+        } else if (this.renderer && (!conVal || conVal === 'all')) {
+          this.renderer.filterStars('constellation', 'all');
+        }
+      });
+    }
+
+    const btnExitTelescope = document.getElementById('btn-exit-telescope');
+    if (btnExitTelescope) {
+      btnExitTelescope.addEventListener('click', () => {
+        if (this.renderer) {
+          this.renderer.exitTelescopeMode();
+        }
+        btnExitTelescope.classList.add('hidden');
+        if (modeSelect) {
+          modeSelect.value = 'all';
+          modeSelect.dispatchEvent(new Event('change'));
+        }
+      });
+    }
   }
 
   _setupPlanetSearch() {
@@ -583,9 +793,23 @@ export class UI {
       return;
     }
 
-    // Fuzzy search: match by name
+    // Fuzzy search: match by name, registered owner, or registered star name
     this._searchResults = this.stars
-      .filter(s => !s.generated && s.name.toLowerCase().includes(q))
+      .filter(s => {
+        if (s.generated) return false;
+        
+        // Match base name
+        if (s.name.toLowerCase().includes(q)) return true;
+        
+        // Match registered details
+        const reg = this.registeredStars && this.registeredStars[s.id];
+        if (reg) {
+          if (reg.owner && reg.owner.toLowerCase().includes(q)) return true;
+          if (reg.starName && reg.starName.toLowerCase().includes(q)) return true;
+        }
+        
+        return false;
+      })
       .sort((a, b) => a.mag - b.mag) // brightest first
       .slice(0, 10);
 
@@ -597,13 +821,27 @@ export class UI {
     if (this._searchResults.length === 0) {
       this.$searchDropdown.innerHTML = '<div class="search-no-results">No stars found</div>';
     } else {
-      this.$searchDropdown.innerHTML = this._searchResults.map((star, i) =>
-        `<div class="search-result-item" data-idx="${i}">
+      this.$searchDropdown.innerHTML = this._searchResults.map((star, i) => {
+        const reg = this.registeredStars && this.registeredStars[star.id];
+        let displayName = this._highlightMatch(star.name, this.$searchInput.value);
+        let metaName = `${star.type || ''}·mag ${star.mag?.toFixed(1) || ''}`;
+        
+        if (reg) {
+           const matchStarName = reg.starName && reg.starName.toLowerCase().includes(this.$searchInput.value.toLowerCase());
+           const matchOwner = reg.owner && reg.owner.toLowerCase().includes(this.$searchInput.value.toLowerCase());
+           
+           if (matchStarName || matchOwner) {
+             displayName = `⭐ ${this._highlightMatch(reg.starName || star.name, this.$searchInput.value)}`;
+             metaName = `Owned by ${this._highlightMatch(reg.owner, this.$searchInput.value)}`;
+           }
+        }
+
+        return `<div class="search-result-item" data-idx="${i}">
           <div class="search-result-dot" style="background:${star.color || '#cce8ff'}; color:${star.color || '#cce8ff'}"></div>
-          <span class="search-result-name">${this._highlightMatch(star.name, this.$searchInput.value)}</span>
-          <span class="search-result-meta">${star.type || ''}·mag ${star.mag?.toFixed(1) || ''}</span>
-        </div>`
-      ).join('');
+          <span class="search-result-name">${displayName}</span>
+          <span class="search-result-meta">${metaName}</span>
+        </div>`;
+      }).join('');
 
       this.$searchDropdown.querySelectorAll('.search-result-item').forEach((el, i) => {
         el.addEventListener('click', () => this._selectSearchResult(i));
@@ -730,6 +968,41 @@ export class UI {
       });
     }
 
+    if (this.$btnConstellations) {
+      this.$btnConstellations.addEventListener('click', () => {
+        if (this.renderer) {
+          const on = this.renderer.toggleConstellations();
+          this.$btnConstellations.classList.toggle('active', on);
+          if (on && !this.renderer.isPlanetariumMode) {
+            // Take the user to the Earth surface
+            this.renderer.teleportToSurface(19.0760, 72.8777, 2500);
+          }
+        }
+      });
+    }
+
+    const btnCategories = document.getElementById('btn-star-categories');
+    const dropdownCategories = document.getElementById('star-categories-dropdown');
+    if (btnCategories && dropdownCategories) {
+      btnCategories.addEventListener('click', () => {
+        dropdownCategories.classList.toggle('hidden');
+        btnCategories.classList.toggle('active', !dropdownCategories.classList.contains('hidden'));
+      });
+      
+      const categories = ['O', 'B', 'A', 'F', 'G', 'K', 'M'];
+      categories.forEach((cat, index) => {
+        const checkbox = document.getElementById(`cat-${cat}`);
+        if (checkbox) {
+          checkbox.addEventListener('change', (e) => {
+            if (this.renderer) {
+              this.renderer.setCategoryVisibility(index, e.target.checked);
+            }
+          });
+        }
+      });
+    }
+
+
     if (this.$btnDeselect) {
       this.$btnDeselect.addEventListener('click', () => {
         this.closePanel();
@@ -749,6 +1022,128 @@ export class UI {
     }
   }
 
+  showRegistrationModal(star) {
+    this.currentStar = star;
+    const targetEl = document.getElementById('register-star-target');
+    if (targetEl) {
+      targetEl.textContent = `Star ID: ${star.id} | Magnitude: ${star.mag || 'N/A'} | Constellation: ${star.con || 'Unknown'}`;
+    }
+    
+    // Clear inputs
+    const inputName = document.getElementById('register-input-name');
+    const inputEmail = document.getElementById('register-input-email');
+    const inputStarName = document.getElementById('register-input-starname');
+    const inputMsg = document.getElementById('register-input-message');
+    if (inputName) inputName.value = '';
+    if (inputEmail) inputEmail.value = '';
+    if (inputStarName) inputStarName.value = '';
+    if (inputMsg) inputMsg.value = '';
+
+    document.getElementById('register-star-modal').classList.remove('hidden');
+  }
+
+  showAlreadyRegisteredModal(star) {
+    this.currentStar = star;
+    const regInfo = this.registeredStars[star.id];
+    
+    document.getElementById('reg-info-starname').textContent = regInfo.starName || 'Unnamed Star';
+    document.getElementById('reg-info-owner').textContent = regInfo.owner || 'Unknown';
+    document.getElementById('reg-info-date').textContent = new Date(regInfo.date).toLocaleDateString();
+
+    document.getElementById('already-registered-modal').classList.remove('hidden');
+  }
+
+  _setupRegistration() {
+    if (this.$btnRegisterStar) {
+      this.$btnRegisterStar.addEventListener('click', () => {
+        if (this.currentStar) {
+          this.showRegistrationModal(this.currentStar);
+        }
+      });
+    }
+
+    const btnCancel = document.getElementById('btn-cancel-register');
+    const btnSubmit = document.getElementById('btn-submit-register');
+    const modal = document.getElementById('register-star-modal');
+    const btnCloseReg = document.getElementById('btn-close-registered');
+    const registeredModal = document.getElementById('already-registered-modal');
+
+    if (btnCancel) {
+      btnCancel.addEventListener('click', () => {
+        modal.classList.add('hidden');
+      });
+    }
+
+    if (btnCloseReg) {
+      btnCloseReg.addEventListener('click', () => {
+        registeredModal.classList.add('hidden');
+      });
+    }
+
+    if (btnSubmit) {
+      btnSubmit.addEventListener('click', async () => {
+        const name = document.getElementById('register-input-name').value.trim();
+        const email = document.getElementById('register-input-email').value.trim();
+        const starName = document.getElementById('register-input-starname').value.trim();
+        const message = document.getElementById('register-input-message').value.trim();
+
+        if (!name || !email || !starName) {
+          return alert('Please fill in your Name, Email, and Star Name.');
+        }
+
+        const originalText = btnSubmit.textContent;
+        btnSubmit.textContent = 'Registering...';
+        btnSubmit.disabled = true;
+
+        try {
+          const res = await fetch('/api/stars/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              starId: this.currentStar.id,
+              ownerName: name,
+              email: email,
+              starName: starName,
+              message: message,
+              originalName: this.currentStar.name
+            })
+          });
+
+          const data = await res.json();
+          if (data.success) {
+            this.registeredStars[this.currentStar.id] = { 
+              owner: name, 
+              message: message,
+              starName: starName,
+              uniqueId: data.uniqueId,
+              date: new Date().toISOString()
+            };
+            modal.classList.add('hidden');
+            alert(`Star registered successfully!\nYour Security Key: ${data.secretKey}\nA certificate has been generated and emailed to you.`);
+            
+            // Trigger 3D renderer update
+            if (this.renderer) {
+               this.renderer.highlightRegisteredStars(this.registeredStars);
+            }
+
+            // Immediately refresh the side panel to show the new ownership
+            if (this.currentStar) {
+               this.openPanel(this.currentStar);
+            }
+          } else {
+            alert(data.error || 'Failed to register.');
+          }
+        } catch (err) {
+          console.error(err);
+          alert('An error occurred during registration.');
+        } finally {
+          btnSubmit.textContent = originalText;
+          btnSubmit.disabled = false;
+        }
+      });
+    }
+  }
+
   /* ---- Keyboard Shortcuts ---- */
   _setupKeyboard() {
     document.addEventListener('keydown', (e) => {
@@ -758,10 +1153,21 @@ export class UI {
         this.$searchInput.focus();
         this.$searchInput.select();
       }
-      // Escape → close panel / search
+      // Escape → close panel / search / exit telescope
       if (e.key === 'Escape') {
         this.closePanel();
         this._hideDropdown();
+        if (this.renderer) {
+          this.renderer.exitTelescopeMode();
+        }
+        const btnExit = document.getElementById('btn-exit-telescope');
+        if (btnExit && !btnExit.classList.contains('hidden')) {
+          btnExit.classList.add('hidden');
+          if (this.$searchModeSelect) {
+            this.$searchModeSelect.value = 'all';
+            this.$searchModeSelect.dispatchEvent(new Event('change'));
+          }
+        }
       }
     });
   }

@@ -68,11 +68,11 @@ function processGZ() {
         const id = parseInt(cols[0], 10);
         if (id === 0) return; // Skip Sun
 
-        const proper = cols[6]; // proper name
-        const bf = cols[5]; // bayer-flamsteed
+        const proper = cols[6] ? cols[6].replace(/"/g, '').trim() : ''; // proper name
+        const bf = cols[5] ? cols[5].replace(/"/g, '').trim() : ''; // bayer-flamsteed
         let name = proper;
-        if (!name || name.trim() === '') name = bf;
-        if (!name || name.trim() === '') name = 'HIP ' + cols[1]; // HIP id
+        if (!name || name === '') name = bf;
+        if (!name || name === '') name = 'HIP ' + cols[1]; // HIP id
 
         // x=17, y=18, z=19, mag=13, ci=16
         const x = parseFloat(cols[17]);
@@ -80,7 +80,8 @@ function processGZ() {
         const z = parseFloat(cols[19]);
         const mag = parseFloat(cols[13]);
         const ci = parseFloat(cols[16]);
-        const spect = cols[15]; // spectral type e.g., "G2V"
+        const spect = cols[15] ? cols[15].replace(/"/g, '') : ''; // spectral type e.g., "G2V"
+        const con = cols[29] ? cols[29].replace(/"/g, '').trim() : ''; // constellation abbreviation
 
         if (isNaN(x) || isNaN(y) || isNaN(z) || isNaN(mag)) return;
 
@@ -95,8 +96,10 @@ function processGZ() {
             }
         }
 
-        // Format: [id, x, y, z, mag, r, g, b, name, type]
-        outData.push([id, x, y, z, mag, rgb[0], rgb[1], rgb[2], name, type]);
+        const hasProperName = (proper !== '') ? 1 : 0;
+
+        // Format: [id, x, y, z, mag, r, g, b, name, type, con, hasProperName]
+        outData.push([id, x, y, z, mag, rgb[0], rgb[1], rgb[2], name, type, con, hasProperName]);
     });
 
     rl.on('close', () => {

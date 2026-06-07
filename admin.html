@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Galaxy Admin Dashboard</title>
+  <!-- Using the same stylesheet for tailwind utilities -->
+  <link rel="stylesheet" href="/src/style.css" />
+  <style>
+    /* Dark theme resets for admin specifically if needed */
+    html, body {
+      overflow: auto !important;
+      height: auto !important;
+    }
+    body {
+      background-color: #0f172a; /* Tailwind slate-900 */
+      color: #f8fafc; /* Tailwind slate-50 */
+      margin: 0;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+  </style>
+</head>
+<body>
+  <div id="admin-root"></div>
+  <script type="module" src="/src/admin/index.jsx"></script>
+</body>
+</html>
