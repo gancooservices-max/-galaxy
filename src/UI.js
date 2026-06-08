@@ -4,6 +4,7 @@
  */
 
 import { SPECTRAL_TYPES, CONSTELLATIONS, formatDistance, formatRA, formatDec, getStarDescription } from './StarData.js';
+import { ImmersiveStarUI } from './ImmersiveStarUI.js';
 
 const PLANET_INFO = {
   'Sun': { temp: '5,778 K', type: 'Yellow Dwarf Star', spec: 'G2V', desc: 'The star at the center of the Solar System.', mass: '1.989 × 10^30 kg', radius: '696,340 km', gravity: '274 m/s²', orbit: '230 million years', day: '27 days', wiki: 'https://en.wikipedia.org/wiki/Sun', img: '/textures/sun.png' },
@@ -327,6 +328,42 @@ export class UI {
     const typeInfo = SPECTRAL_TYPES[star.type] || {};
     const isPlanet = star.isPlanet;
     const isSatellite = star.isSatellite;
+
+    if (!isPlanet && !isSatellite) {
+      // It's a star, open immersive UI!
+      if (!this.immersiveUI) {
+        this.immersiveUI = new ImmersiveStarUI({ renderer: this.renderer });
+        
+        // Bind the new immersive register button to the exact same logic
+        const immRegBtn = document.getElementById('imm-btn-register');
+        if (immRegBtn && this.$btnRegisterStar) {
+          immRegBtn.addEventListener('click', () => {
+            this.$btnRegisterStar.click();
+          });
+        }
+      }
+      
+      // Update registration status visually on immersive panel before opening
+      const immRegBtn = document.getElementById('imm-btn-register');
+      if (immRegBtn) {
+        const reg = this.registeredStars && this.registeredStars[star.id];
+        if (reg) {
+          immRegBtn.textContent = '⭐ Premium Star (Owned)';
+          immRegBtn.style.background = 'rgba(255,255,255,0.1)';
+          immRegBtn.style.color = '#fff';
+          immRegBtn.style.pointerEvents = 'none';
+        } else {
+          immRegBtn.textContent = '⭐ Register this Star';
+          immRegBtn.style.background = 'rgba(255, 215, 0, 0.15)';
+          immRegBtn.style.color = '#ffd700';
+          immRegBtn.style.pointerEvents = 'auto';
+        }
+      }
+      
+      this.immersiveUI.open(star);
+      this.hideTooltip();
+      return;
+    }
 
     this.$panelName.textContent = star.name;
 
@@ -1038,8 +1075,8 @@ export class UI {
     if (inputEmail) inputEmail.value = '';
     if (inputStarName) inputStarName.value = '';
     if (inputMsg) inputMsg.value = '';
-
     document.getElementById('register-star-modal').classList.remove('hidden');
+    document.getElementById('register-star-modal').classList.add('modal-animate-in');
   }
 
   showAlreadyRegisteredModal(star) {
@@ -1049,8 +1086,8 @@ export class UI {
     document.getElementById('reg-info-starname').textContent = regInfo.starName || 'Unnamed Star';
     document.getElementById('reg-info-owner').textContent = regInfo.owner || 'Unknown';
     document.getElementById('reg-info-date').textContent = new Date(regInfo.date).toLocaleDateString();
-
     document.getElementById('already-registered-modal').classList.remove('hidden');
+    document.getElementById('already-registered-modal').classList.add('modal-animate-in');
   }
 
   _setupRegistration() {
@@ -1071,12 +1108,14 @@ export class UI {
     if (btnCancel) {
       btnCancel.addEventListener('click', () => {
         modal.classList.add('hidden');
+        modal.classList.remove('modal-animate-in');
       });
     }
 
     if (btnCloseReg) {
       btnCloseReg.addEventListener('click', () => {
         registeredModal.classList.add('hidden');
+        registeredModal.classList.remove('modal-animate-in');
       });
     }
 
@@ -1119,6 +1158,7 @@ export class UI {
               date: new Date().toISOString()
             };
             modal.classList.add('hidden');
+            modal.classList.remove('modal-animate-in');
             alert(`Star registered successfully!\nYour Security Key: ${data.secretKey}\nA certificate has been generated and emailed to you.`);
             
             // Trigger 3D renderer update

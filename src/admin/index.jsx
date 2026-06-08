@@ -104,6 +104,8 @@ function Dashboard({ token, onLogout }) {
 function Registrations({ token }) {
   const [regs, setRegs] = useState([]);
   const [selectedReg, setSelectedReg] = useState(null);
+  const [capsules, setCapsules] = useState([]);
+  const [wishes, setWishes] = useState([]);
 
   const fetchRegs = async () => {
     const res = await fetch('/api/admin/registrations', { headers: { 'Authorization': `Bearer ${token}` } });
@@ -111,6 +113,23 @@ function Registrations({ token }) {
   };
 
   useEffect(() => { fetchRegs(); }, []);
+
+  useEffect(() => {
+    if (selectedReg) {
+      fetch(`/api/mystar/${selectedReg.star_id}/capsules`)
+        .then(res => res.json())
+        .then(data => setCapsules(Array.isArray(data) ? data : []))
+        .catch(() => setCapsules([]));
+      
+      fetch(`/api/mystar/${selectedReg.star_id}/wishes`)
+        .then(res => res.json())
+        .then(data => setWishes(Array.isArray(data) ? data : []))
+        .catch(() => setWishes([]));
+    } else {
+      setCapsules([]);
+      setWishes([]);
+    }
+  }, [selectedReg]);
 
   const handleDelete = async (id) => {
     if (!confirm('Are you sure you want to revoke this registration?')) return;
@@ -179,28 +198,106 @@ function Registrations({ token }) {
       </div>
 
       {selectedReg && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-800 border border-slate-700 rounded-lg shadow-2xl max-w-lg w-full overflow-hidden">
-            <div className="flex justify-between items-center p-4 border-b border-slate-700 bg-slate-900/50">
-              <h3 className="text-xl font-bold text-yellow-400">Registration Details</h3>
-              <button onClick={() => setSelectedReg(null)} className="text-slate-400 hover:text-white text-2xl leading-none">&times;</button>
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl shadow-[0_0_50px_rgba(0,255,255,0.1)] max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden relative">
+            <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
+            
+            <div className="flex justify-between items-center p-6 border-b border-white/10 bg-black/20 relative z-10">
+              <h3 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-aurora-cyan to-nebula-pink tracking-wide">
+                Stellar Registry Details
+              </h3>
+              <button onClick={() => setSelectedReg(null)} className="text-white/50 hover:text-white hover:bg-white/10 rounded-full w-8 h-8 flex items-center justify-center transition-all text-xl leading-none pb-1">&times;</button>
             </div>
-            <div className="p-6 space-y-4 text-slate-200">
-              <div><strong className="text-slate-400 block text-sm">Owner Name</strong><div className="text-lg">{selectedReg.owner_name}</div></div>
-              <div><strong className="text-slate-400 block text-sm">Email</strong><div>{selectedReg.email}</div></div>
-              <div><strong className="text-slate-400 block text-sm">Custom Star Name</strong><div className="text-yellow-400 text-lg font-bold">{selectedReg.star_name}</div></div>
-              <div><strong className="text-slate-400 block text-sm">Original Designation</strong><div className="text-slate-300 italic">{selectedReg.original_name || 'Unknown'}</div></div>
-              <div><strong className="text-slate-400 block text-sm">Dedicated Message</strong><div className="italic bg-slate-900/50 p-3 rounded mt-1 border border-slate-700">{selectedReg.message || 'No message provided'}</div></div>
+            
+            <div className="p-8 space-y-6 text-slate-200 overflow-y-auto relative z-10">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-black/30 p-4 rounded-2xl border border-white/5">
+                  <strong className="text-aurora-cyan/70 block text-xs uppercase tracking-wider mb-1">Owner Name</strong>
+                  <div className="text-xl font-semibold text-white">{selectedReg.owner_name}</div>
+                </div>
+                <div className="bg-black/30 p-4 rounded-2xl border border-white/5">
+                  <strong className="text-aurora-cyan/70 block text-xs uppercase tracking-wider mb-1">Email</strong>
+                  <div className="text-base text-slate-300">{selectedReg.email}</div>
+                </div>
+                
+                <div className="col-span-2 bg-black/30 p-5 rounded-2xl border border-white/5 relative overflow-hidden">
+                  <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-yellow-500/10 to-transparent pointer-events-none" />
+                  <strong className="text-yellow-500/70 block text-xs uppercase tracking-wider mb-1">Custom Star Name</strong>
+                  <div className="text-2xl text-yellow-400 font-bold tracking-wide">{selectedReg.star_name}</div>
+                  <div className="text-slate-400 text-sm mt-1">Orig: {selectedReg.original_name || 'Unknown'}</div>
+                </div>
+
+                <div className="col-span-2 bg-black/30 p-4 rounded-2xl border border-white/5">
+                  <strong className="text-aurora-cyan/70 block text-xs uppercase tracking-wider mb-2">Dedicated Message</strong>
+                  <div className="italic text-slate-300 leading-relaxed">"{selectedReg.message || 'No message provided'}"</div>
+                </div>
+              </div>
               
-              <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-700">
-                <div><strong className="text-slate-400 block text-sm">Star ID (Database)</strong><div className="font-mono text-sm">{selectedReg.star_id}</div></div>
-                <div><strong className="text-slate-400 block text-sm">Registry Unique ID</strong><div className="font-mono text-sm text-green-400">{selectedReg.unique_id}</div></div>
-                <div className="col-span-2"><strong className="text-slate-400 block text-sm">Secret Security Key</strong><div className="font-mono text-sm text-purple-400">{selectedReg.secret_key}</div></div>
-                <div className="col-span-2"><strong className="text-slate-400 block text-sm">Registration Date</strong><div>{new Date(selectedReg.registration_date).toLocaleString()}</div></div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-black/30 p-4 rounded-2xl border border-white/5">
+                  <strong className="text-aurora-cyan/70 block text-xs uppercase tracking-wider mb-1">Star ID (Database)</strong>
+                  <div className="font-mono text-sm text-slate-300">{selectedReg.star_id}</div>
+                </div>
+                <div className="bg-black/30 p-4 rounded-2xl border border-white/5">
+                  <strong className="text-aurora-cyan/70 block text-xs uppercase tracking-wider mb-1">Registry Unique ID</strong>
+                  <div className="font-mono text-sm text-green-400">{selectedReg.unique_id}</div>
+                </div>
+                <div className="col-span-2 bg-black/30 p-4 rounded-2xl border border-purple-500/20">
+                  <strong className="text-purple-400/70 block text-xs uppercase tracking-wider mb-1">Secret Security Key</strong>
+                  <div className="font-mono text-base text-purple-300 tracking-widest">{selectedReg.secret_key}</div>
+                </div>
+                <div className="col-span-2 bg-black/30 p-4 rounded-2xl border border-white/5">
+                  <strong className="text-aurora-cyan/70 block text-xs uppercase tracking-wider mb-1">Registration Date</strong>
+                  <div className="text-slate-300">{new Date(selectedReg.registration_date).toLocaleString()}</div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="text-lg font-bold text-yellow-400 flex items-center gap-2">
+                  <span>⏳ Time Capsules</span> 
+                  <span className="text-xs bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded-full">{capsules.length}/2</span>
+                </h4>
+                {capsules.length === 0 ? <div className="text-slate-500 text-sm italic ml-2">No capsules created.</div> : (
+                  <div className="space-y-3">
+                    {capsules.map(cap => (
+                      <div key={cap.id} className="bg-black/40 p-4 rounded-xl border border-white/10 backdrop-blur-md">
+                        <div className="flex justify-between items-center text-sm mb-2">
+                          <span className="text-aurora-cyan">Unlock Date: <span className="text-white font-medium">{new Date(cap.open_on_date).toLocaleDateString()}</span></span>
+                          <span className="text-slate-500 text-xs">{new Date(cap.created_at).toLocaleDateString()}</span>
+                        </div>
+                        <div className="text-slate-400 italic text-sm flex items-center gap-2 bg-black/50 p-2 rounded-lg">
+                          <span className="text-lg">🔒</span> Message hidden for privacy
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="text-lg font-bold text-nebula-pink flex items-center gap-2">
+                  <span>✨ Secret Wishes</span>
+                  <span className="text-xs bg-nebula-pink/20 text-nebula-pink px-2 py-0.5 rounded-full">{wishes.length}/3</span>
+                </h4>
+                {wishes.length === 0 ? <div className="text-slate-500 text-sm italic ml-2">No wishes created.</div> : (
+                  <div className="space-y-3">
+                    {wishes.map(wish => (
+                      <div key={wish.id} className="bg-black/40 p-4 rounded-xl border border-white/10 backdrop-blur-md">
+                        <div className="flex justify-between items-center text-sm mb-2">
+                          <span className="text-nebula-pink">Wish <span className="text-white font-medium">#{wish.id}</span></span>
+                          <span className="text-slate-500 text-xs">{new Date(wish.created_at).toLocaleDateString()}</span>
+                        </div>
+                        <div className="text-slate-400 italic text-sm flex items-center gap-2 bg-black/50 p-2 rounded-lg">
+                          <span className="text-lg">🔒</span> Wish text is encrypted and hidden
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
-            <div className="p-4 border-t border-slate-700 bg-slate-900/50 flex justify-end">
-              <button onClick={() => setSelectedReg(null)} className="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded text-white transition">Close</button>
+            <div className="p-6 border-t border-white/10 bg-black/20 relative z-10 flex justify-end">
+              <button onClick={() => setSelectedReg(null)} className="bg-white/10 hover:bg-white/20 border border-white/20 px-6 py-2 rounded-xl text-white font-medium transition-all shadow-lg hover:shadow-white/10">Close Details</button>
             </div>
           </div>
         </div>

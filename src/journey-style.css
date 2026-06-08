@@ -1,0 +1,589 @@
+/* journey-style.css - World-Class Cinematic Overlay Styles */
+
+#journey-ui-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  font-family: 'Inter', -apple-system, sans-serif;
+  overflow: hidden;
+}
+
+.journey-hidden {
+  display: none !important;
+}
+
+/* Glassmorphism Mission Panel */
+.mission-status-panel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(10, 15, 30, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 40px;
+  color: #fff;
+  min-width: 400px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.05);
+  animation: j-fadeInUp 1s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.mission-title {
+  font-size: 14px;
+  color: #0ea5e9;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  margin-bottom: 20px;
+  font-weight: 600;
+}
+
+.mission-row {
+  margin-bottom: 15px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  padding-bottom: 15px;
+}
+
+.mission-label {
+  font-size: 11px;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 5px;
+}
+
+.mission-value {
+  font-size: 24px;
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.mission-value.highlight {
+  color: #38bdf8;
+  font-weight: 500;
+  text-shadow: 0 0 15px rgba(56, 189, 248, 0.5);
+}
+
+.countdown-text {
+  font-size: 72px;
+  font-weight: 800;
+  text-align: center;
+  margin-top: 30px;
+  color: #f8fafc;
+  text-shadow: 0 0 30px rgba(255,255,255,0.8);
+  animation: j-pulse 1s infinite;
+}
+
+/* Speed Evolution System */
+.speed-system-container {
+  position: absolute;
+  bottom: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  animation: j-fadeIn 1s forwards;
+}
+
+.speed-meter-wrapper {
+  display: flex;
+  gap: 10px;
+}
+
+.speed-node {
+  padding: 8px 16px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 30px;
+  color: #64748b;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.3s ease;
+}
+
+.speed-node.active {
+  background: rgba(14, 165, 233, 0.2);
+  border-color: #0ea5e9;
+  color: #fff;
+  box-shadow: 0 0 20px rgba(14, 165, 233, 0.4);
+}
+
+.speed-node.lightspeed {
+  background: rgba(168, 85, 247, 0.3);
+  border-color: #a855f7;
+  color: #fff;
+  box-shadow: 0 0 30px rgba(168, 85, 247, 0.6);
+  font-weight: bold;
+}
+
+.speed-comparison-text {
+  font-size: 18px;
+  font-weight: 300;
+  color: #e2e8f0;
+  text-align: center;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+}
+
+/* Cinematic Big Text */
+.cinematic-text {
+  font-size: 48px;
+  font-weight: 700;
+  letter-spacing: 8px;
+  text-transform: uppercase;
+  color: #fff;
+  text-shadow: 0 0 40px rgba(255,255,255,0.5);
+  text-align: center;
+  animation: j-cinematicZoom 4s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
+}
+
+.cinematic-subtext {
+  font-size: 20px;
+  font-weight: 300;
+  letter-spacing: 4px;
+  color: #94a3b8;
+  margin-top: 10px;
+}
+
+/* Hologram Facts */
+.hologram-fact {
+  position: absolute;
+  top: 30%;
+  right: 10%;
+  max-width: 350px;
+  border-left: 3px solid #38bdf8;
+  padding-left: 20px;
+  color: #e2e8f0;
+  animation: j-hologramFlicker 0.5s forwards, j-fadeIn 1s forwards;
+}
+
+.hologram-title {
+  font-size: 12px;
+  color: #38bdf8;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+}
+
+.hologram-desc {
+  font-size: 18px;
+  font-weight: 300;
+  line-height: 1.5;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+}
+
+/* Screen Flash for Lightspeed */
+.warp-flash {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #fff;
+  opacity: 0;
+  z-index: 99999;
+}
+
+.warp-flash-active {
+  animation: j-flashOut 1.5s ease-out forwards;
+}
+
+/* Emotional Quotes */
+.emotional-quote {
+  position: absolute;
+  bottom: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 28px;
+  font-weight: 300;
+  font-style: italic;
+  color: #fff;
+  text-shadow: 0 0 20px rgba(255,255,255,0.3);
+  text-align: center;
+  max-width: 800px;
+  line-height: 1.4;
+  opacity: 0;
+  transition: opacity 2s ease;
+}
+
+/* Animations */
+@keyframes j-fadeInUp {
+  from { opacity: 0; transform: translate(-50%, -40%); }
+  to { opacity: 1; transform: translate(-50%, -50%); }
+}
+
+@keyframes j-fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes j-pulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.8; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes j-cinematicZoom {
+  0% { opacity: 0; transform: scale(0.9); filter: blur(10px); }
+  20% { opacity: 1; transform: scale(1); filter: blur(0px); }
+  80% { opacity: 1; transform: scale(1.05); filter: blur(0px); }
+  100% { opacity: 0; transform: scale(1.1); filter: blur(10px); }
+}
+
+@keyframes j-hologramFlicker {
+  0% { opacity: 0; filter: blur(5px); transform: translateX(20px); }
+  20% { opacity: 0.8; filter: blur(1px); }
+  30% { opacity: 0.4; }
+  40% { opacity: 0.9; }
+  60% { opacity: 0.3; }
+  80% { opacity: 1; filter: blur(0); transform: translateX(0); }
+  100% { opacity: 1; }
+}
+
+@keyframes j-flashOut {
+  0% { opacity: 1; }
+  10% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Spaceship Cockpit Overlay */
+.cockpit-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9900;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  /* Darkened edges to simulate window frame */
+  box-shadow: inset 0 0 200px rgba(0,0,0,0.95), inset 0 0 50px rgba(0,20,40,0.8);
+  animation: j-fadeIn 2s forwards;
+  transition: opacity 2s ease, background-color 2s ease, box-shadow 2s ease;
+}
+
+/* Lightspeed dimming state */
+.cockpit-dimmed {
+  box-shadow: inset 0 0 300px rgba(0,0,0,0.99), inset 0 0 100px rgba(0,0,0,0.9);
+  background-color: rgba(0,0,0,0.5);
+}
+
+.cockpit-dimmed .cockpit-panel,
+.cockpit-dimmed .cockpit-dashboard {
+  opacity: 0.5;
+  filter: hue-rotate(-20deg);
+}
+
+/* Cockpit Vibration for Launch & Warp */
+@keyframes j-vibrate {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(2px, -2px); }
+  50% { transform: translate(-2px, 2px); }
+  75% { transform: translate(2px, 2px); }
+  100% { transform: translate(-2px, -2px); }
+}
+
+.cockpit-shake {
+  animation: j-vibrate 0.1s linear infinite;
+}
+
+.cockpit-shake-heavy {
+  animation: j-vibrate 0.05s linear infinite;
+}
+
+/* Structural Cockpit Frames */
+.cockpit-top-frame {
+  height: 90px;
+  background: linear-gradient(to bottom, rgba(5,10,20,0.95) 0%, rgba(5,10,20,0.8) 50%, transparent 100%);
+  border-bottom: 2px solid rgba(14, 165, 233, 0.4);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 15px 40px;
+  position: relative;
+}
+
+.cockpit-top-frame::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 10%;
+  width: 80%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(14, 165, 233, 0.8), transparent);
+}
+
+.cockpit-title {
+  color: #0ea5e9; 
+  letter-spacing: 6px; 
+  font-weight: 800; 
+  font-size: 16px;
+  text-shadow: 0 0 15px #0ea5e9;
+  font-family: 'Inter', sans-serif;
+}
+
+.cockpit-status-bar {
+  color: #94a3b8;
+  font-family: monospace;
+  font-size: 12px;
+  letter-spacing: 2px;
+}
+
+.cockpit-middle {
+  flex-grow: 1;
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 30px;
+}
+
+/* Left & Right Side HUDs */
+.cockpit-side-panel {
+  width: 280px;
+  height: 60%;
+  background: linear-gradient(90deg, rgba(5,10,20,0.6) 0%, transparent 100%);
+  border-left: 2px solid rgba(14, 165, 233, 0.3);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  backdrop-filter: blur(2px);
+  mask-image: linear-gradient(to bottom, transparent, black 10%, black 90%, transparent);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, black 10%, black 90%, transparent);
+}
+
+.cockpit-side-panel.right {
+  background: linear-gradient(-90deg, rgba(5,10,20,0.6) 0%, transparent 100%);
+  border-left: none;
+  border-right: 2px solid rgba(14, 165, 233, 0.3);
+  align-items: flex-end;
+  text-align: right;
+}
+
+.hud-box {
+  background: rgba(14, 165, 233, 0.05);
+  border: 1px solid rgba(14, 165, 233, 0.2);
+  border-radius: 8px;
+  padding: 15px;
+  color: #e0f2fe;
+  font-family: 'Inter', sans-serif;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.5), inset 0 0 10px rgba(14, 165, 233, 0.1);
+  width: 100%;
+}
+
+.hud-title {
+  font-size: 10px;
+  color: #38bdf8;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  border-bottom: 1px solid rgba(56, 189, 248, 0.3);
+  padding-bottom: 5px;
+}
+
+.hud-value {
+  font-size: 16px;
+  font-weight: 600;
+  font-family: monospace;
+}
+
+.hud-value.highlight {
+  color: #a855f7;
+  text-shadow: 0 0 10px #a855f7;
+}
+
+/* AI Assistant Subtitles */
+.ai-voice-box {
+  position: absolute;
+  bottom: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  max-width: 600px;
+}
+
+.ai-waveform {
+  display: flex;
+  justify-content: center;
+  gap: 3px;
+  margin-bottom: 10px;
+  height: 20px;
+  align-items: flex-end;
+}
+
+.ai-bar {
+  width: 4px;
+  background: #38bdf8;
+  height: 5px;
+  border-radius: 2px;
+  animation: j-waveform 1s ease-in-out infinite alternate;
+  box-shadow: 0 0 8px #38bdf8;
+}
+
+.ai-bar:nth-child(2) { animation-delay: 0.1s; }
+.ai-bar:nth-child(3) { animation-delay: 0.2s; }
+.ai-bar:nth-child(4) { animation-delay: 0.3s; }
+.ai-bar:nth-child(5) { animation-delay: 0.4s; }
+
+@keyframes j-waveform {
+  0% { height: 5px; opacity: 0.5; }
+  100% { height: 20px; opacity: 1; }
+}
+
+.ai-text {
+  font-size: 18px;
+  font-style: italic;
+  color: #f8fafc;
+  text-shadow: 0 0 10px rgba(56, 189, 248, 0.8);
+  font-family: 'Inter', sans-serif;
+  animation: j-fadeIn 0.5s ease-out;
+}
+
+/* Central Reticle */
+.hud-reticle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 400px;
+  height: 400px;
+  border: 1px dashed rgba(14, 165, 233, 0.2);
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: j-spin 30s linear infinite;
+}
+
+.hud-reticle::before {
+  content: '';
+  width: 30px;
+  height: 30px;
+  border: 2px solid rgba(14, 165, 233, 0.6);
+  border-radius: 50%;
+  box-shadow: 0 0 15px rgba(14, 165, 233, 0.5);
+}
+
+.hud-reticle::after {
+  content: '';
+  position: absolute;
+  width: 450px;
+  height: 450px;
+  border: 1px solid rgba(14, 165, 233, 0.1);
+  border-radius: 50%;
+  border-left-color: rgba(14, 165, 233, 0.4);
+  border-right-color: rgba(14, 165, 233, 0.4);
+}
+
+@keyframes j-spin {
+  100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Bottom Dashboard */
+.cockpit-bottom-dash {
+  height: 140px;
+  background: linear-gradient(to top, rgba(5,10,20,0.98) 0%, rgba(5,10,20,0.8) 60%, transparent 100%);
+  border-top: 2px solid rgba(14, 165, 233, 0.4);
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 20px 60px;
+}
+
+.cockpit-bottom-dash::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: 20%;
+  width: 60%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(14, 165, 233, 0.8), transparent);
+}
+
+.cockpit-panel {
+  width: 250px;
+  height: 80px;
+  background: rgba(0, 30, 60, 0.4);
+  border: 1px solid rgba(14, 165, 233, 0.5);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: #38bdf8;
+  font-family: monospace;
+  box-shadow: inset 0 0 30px rgba(0, 100, 200, 0.3), 0 5px 15px rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+}
+
+.cockpit-panel-title {
+  font-size: 11px; 
+  color: #94a3b8;
+  letter-spacing: 2px;
+  margin-bottom: 5px;
+}
+
+.cockpit-panel-value {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+/* Arrival Ceremony Buttons */
+.arrival-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 30px;
+  animation: j-slideUp 1s ease-out forwards;
+}
+
+.arrival-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: 30px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.arrival-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: #fff;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.arrival-btn.primary {
+  background: rgba(14, 165, 233, 0.2);
+  border-color: #0ea5e9;
+  color: #38bdf8;
+}
+
+.arrival-btn.primary:hover {
+  background: rgba(14, 165, 233, 0.4);
+  box-shadow: 0 0 20px rgba(14, 165, 233, 0.5);
+}

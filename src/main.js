@@ -184,28 +184,11 @@ async function main() {
 
   window.addEventListener('mystar-zoom-in', () => {
     if (!renderer) return;
-    if (!renderer._active3DStar && window.isMyStarTracking && window.currentTrackedStarId) {
-      const starData = renderer.stars.find(s => String(s.id) === String(window.currentTrackedStarId) || String(s.id) === `CUST-${window.currentTrackedStarId}`);
-      if (starData) {
-        // "directly showing the 3d view"
-        renderer.viewStar3D(starData, true); // instant = true
-        
-        // "all features is visible" (restore UI)
-        return;
-      }
-    }
     renderer.zoomTowardsSelected(true);
   });
 
   window.addEventListener('mystar-zoom-out', () => {
     if (!renderer) return;
-    if (!renderer._active3DStar && window.isMyStarTracking && window.currentTrackedStarId) {
-      const starData = renderer.stars.find(s => String(s.id) === String(window.currentTrackedStarId) || String(s.id) === `CUST-${window.currentTrackedStarId}`);
-      if (starData) {
-        renderer.viewStar3D(starData, true); // instant = true
-        return;
-      }
-    }
     renderer.zoomTowardsSelected(false);
   });
 
@@ -247,8 +230,14 @@ async function main() {
       if (el) el.style.display = 'none';
     });
     
-    // Find the star
-    // The star_id in the database can either be a standard HYG id, or 'CUST-XXXX'
+    const rootEl = document.getElementById('react-root');
+    if (rootEl) {
+      rootEl.style.pointerEvents = 'none';
+    }
+    
+    const capsules = e.detail?.capsules || [];
+    const wishes = e.detail?.wishes || [];
+    
     const starData = renderer.stars.find(s => String(s.id) === String(starId) || String(s.id) === `CUST-${starId}`);
     
     if (starData) {
@@ -257,8 +246,33 @@ async function main() {
       }
       renderer.selectStar(starData); // Applies the blinking marker
       renderer.flyTo(starData, 3000);
+      if (typeof renderer.renderUserItems === 'function') {
+        renderer.renderUserItems(starData, capsules, wishes);
+      }
     } else {
       console.warn("Star not found in current loaded map:", starId);
+    }
+  });
+
+  window.addEventListener('mystar-cinematic-journey', (e) => {
+    const starDataRaw = e.detail?.starData;
+    const capsules = e.detail?.capsules || [];
+    const wishes = e.detail?.wishes || [];
+    if (!starDataRaw || !renderer) return;
+
+    const starId = starDataRaw.star_id || starDataRaw.unique_id;
+    const starData = renderer.stars.find(s => String(s.id) === String(starId) || String(s.id) === `CUST-${starId}`);
+
+    if (starData) {
+      if (typeof renderer.travelToStarSequence === 'function') {
+        renderer.travelToStarSequence(starData, capsules, wishes);
+      } else {
+        renderer.selectStar(starData);
+        renderer.flyTo(starData, 5000);
+        if (typeof renderer.renderUserItems === 'function') {
+          renderer.renderUserItems(starData, capsules, wishes);
+        }
+      }
     }
   });
 
@@ -269,12 +283,12 @@ async function main() {
       renderer.controls.autoRotate = false;
     }
 
-    // Restore 3D UI
-    const elsToShow = ['app-header', 'bottom-controls', 'btn-toggle-features', 'corner-menubar', 'time-controller'];
-    elsToShow.forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.style.display = ''; // restore
-    });
+    // Do NOT restore 3D UI here. MyStarPortal handles restoring UI when it unmounts.
+
+    const rootEl = document.getElementById('react-root');
+    if (rootEl) {
+      rootEl.style.pointerEvents = 'auto';
+    }
 
   });
 
@@ -327,6 +341,7 @@ async function main() {
   // Click handler
   interaction.onClick = (star) => {
     if (renderer.missionSimulator && renderer.missionSimulator.active) return;
+    if (window.isMyStarTracking) return;
 
     updatePlanetRealtimeDistance(star);
     renderer.selectStar(star);
@@ -344,6 +359,7 @@ async function main() {
 
   // Earth click handler
   interaction.onEarthClick = () => {
+    if (window.isMyStarTracking) return;
     const earthData = planets.find(p => p.id === 'Earth');
     if (earthData) {
       updatePlanetRealtimeDistance(earthData);

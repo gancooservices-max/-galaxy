@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import StarInfoPanel from './modules/StarInfoPanel';
+import PlanetComparison from './modules/PlanetComparison';
+import StarComparison from './modules/StarComparison';
+import DistanceScale from './modules/DistanceScale';
+import UniverseScale from './modules/UniverseScale';
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform, useMotionTemplate } from 'framer-motion';
-import { Star, Shield, Lock, Unlock, Calendar, MapPin, Award, ArrowLeft, Send, Compass, Crosshair, Radio, Circle, X, Maximize, Orbit, ZoomIn, ZoomOut, Box } from 'lucide-react';
+import { Star, Shield, Lock, Unlock, Calendar, MapPin, Award, ArrowLeft, Send, Compass, Crosshair, Radio, Circle, X, Maximize, Orbit, ZoomIn, ZoomOut, Box, Globe2, Trash2 } from 'lucide-react';
 
 const FadeIn = ({ children, delay = 0, className = "" }) => (
   <motion.div
@@ -132,187 +137,6 @@ const CosmicEventFeed = ({ starData }) => {
   );
 };
 
-const SIZE_OBJECTS = [
-  { name: 'The Moon', radius: 1737, color: 'bg-gray-300', shadow: 'rgba(209,213,219,0.5)', size: 4 },
-  { name: 'Earth', radius: 6371, color: 'bg-blue-400', shadow: 'rgba(96,165,250,0.8)', size: 8 },
-  { name: 'Mars', radius: 3389, color: 'bg-red-400', shadow: 'rgba(248,113,113,0.8)', size: 6 },
-  { name: 'Jupiter', radius: 69911, color: 'bg-[#E5B581]', shadow: 'rgba(229,181,129,0.5)', size: 24 },
-  { name: 'The Sun', radius: 696340, color: 'bg-[#FFD700]', shadow: 'rgba(255,215,0,0.6)', size: 96 },
-  { name: 'Sirius A', radius: 1190000, color: 'bg-white', shadow: 'rgba(255,255,255,0.8)', size: 140 },
-];
-
-const SizeComparisonOverlay = ({ starData, onClose }) => {
-  const [selectedNames, setSelectedNames] = useState(['Earth', 'Jupiter', 'The Sun']);
-
-  const toggleObject = (name) => {
-    if (selectedNames.includes(name)) {
-      setSelectedNames(prev => prev.filter(n => n !== name));
-    } else if (selectedNames.length < 3) {
-      setSelectedNames(prev => [...prev, name]);
-    }
-  };
-
-  let starMultiplier = 1;
-  const spect = starData.spect ? starData.spect.charAt(0).toUpperCase() : 'G';
-  if (spect === 'O') starMultiplier = 15;
-  else if (spect === 'B') starMultiplier = 6;
-  else if (spect === 'A') starMultiplier = 2;
-  else if (spect === 'F') starMultiplier = 1.3;
-  else if (spect === 'K') starMultiplier = 0.7;
-  else if (spect === 'M') starMultiplier = 0.3;
-
-  const starRadiusKm = Math.round(696340 * starMultiplier);
-  const starPixelSize = Math.max(12, Math.min(200, 96 * starMultiplier));
-
-  const selectedObjects = SIZE_OBJECTS.filter(o => selectedNames.includes(o.name)).sort((a,b) => a.radius - b.radius);
-
-  return (
-    <div className="fixed inset-0 z-[300] flex items-center justify-center pointer-events-auto p-6">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={onClose} />
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
-        className="relative w-full max-w-4xl bg-[#0A0C10]/90 border border-white/10 rounded-3xl p-8 overflow-hidden shadow-2xl"
-      >
-        <button onClick={onClose} className="absolute top-6 right-6 text-gray-400 hover:text-white"><X className="w-6 h-6"/></button>
-        <h2 className="text-2xl font-bold text-white mb-2 flex items-center gap-2"><Maximize className="w-6 h-6 text-aurora-cyan" /> Size Comparison</h2>
-        <p className="text-gray-400 mb-6">Select up to 3 objects to compare against {starData.star_name}.</p>
-        
-        <div className="flex flex-wrap gap-2 mb-8 border-b border-white/10 pb-6">
-          {SIZE_OBJECTS.map(obj => (
-            <button 
-              key={obj.name}
-              onClick={() => toggleObject(obj.name)}
-              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all border ${selectedNames.includes(obj.name) ? 'bg-aurora-cyan text-black border-aurora-cyan shadow-[0_0_10px_rgba(0,255,255,0.3)]' : 'bg-transparent text-gray-400 border-white/10 hover:border-white/30 hover:text-white'}`}
-            >
-              {obj.name}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex items-end justify-center gap-8 md:gap-16 h-64 pb-4 overflow-x-auto">
-          <AnimatePresence>
-            {selectedObjects.map(obj => (
-              <motion.div 
-                key={obj.name}
-                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0 }}
-                className="flex flex-col items-center gap-4 min-w-[80px]"
-              >
-                <div 
-                  className={`rounded-full ${obj.color} transition-all duration-500`} 
-                  style={{ width: `${obj.size}px`, height: `${obj.size}px`, boxShadow: `0 0 15px ${obj.shadow}` }} 
-                />
-                <div className="text-center">
-                  <p className="text-white font-bold text-sm whitespace-nowrap">{obj.name}</p>
-                  <p className="text-xs text-gray-500">{obj.radius.toLocaleString()} km</p>
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-
-          <motion.div layout className="flex flex-col items-center gap-4 min-w-[120px]">
-            <div 
-              className="rounded-full bg-aurora-cyan shadow-[0_0_50px_rgba(0,255,255,0.5)] transition-all duration-1000"
-              style={{ width: `${starPixelSize}px`, height: `${starPixelSize}px` }} 
-            />
-            <div className="text-center">
-              <p className="text-aurora-cyan font-bold text-sm whitespace-nowrap">{starData.star_name}</p>
-              <p className="text-xs text-aurora-cyan/60">{starRadiusKm.toLocaleString()} km (Est.)</p>
-            </div>
-          </motion.div>
-        </div>
-      </motion.div>
-    </div>
-  );
-};
-
-const DISTANCE_MILESTONES = [
-  { name: 'The Moon', dist: 0.00000004, label: '0.00000004 LY' },
-  { name: 'Mars', dist: 0.000023, label: '0.000023 LY' },
-  { name: 'Solar System Edge', dist: 0.002, label: '0.002 LY' },
-  { name: 'Alpha Centauri', dist: 4.37, label: '4.37 LY' },
-  { name: 'Sirius', dist: 8.6, label: '8.6 LY' },
-  { name: 'Orion Nebula', dist: 1344, label: '1,344 LY' },
-  { name: 'Galactic Center', dist: 26000, label: '26,000 LY' }
-];
-
-const DistanceComparisonOverlay = ({ starData, onClose }) => {
-  const [selectedNames, setSelectedNames] = useState(['Solar System Edge', 'Alpha Centauri']);
-  
-  const toggleMilestone = (name) => {
-    if (selectedNames.includes(name)) {
-      setSelectedNames(prev => prev.filter(n => n !== name));
-    } else if (selectedNames.length < 3) {
-      setSelectedNames(prev => [...prev, name]);
-    }
-  };
-
-  const dist = parseFloat(starData.dist_ly || starData.distance || 100);
-  const selectedObjects = DISTANCE_MILESTONES.filter(m => selectedNames.includes(m.name));
-  
-  const journeyPoints = [
-    { name: 'Earth', dist: 0, label: '0 LY', color: 'bg-blue-500', shadow: 'rgba(59,130,246,0.8)', size: 'w-4 h-4' },
-    ...selectedObjects.map(m => ({ ...m, color: 'bg-gray-400', shadow: 'transparent', size: 'w-3 h-3' })),
-    { name: starData.star_name, dist: dist, label: `${dist} LY`, color: 'bg-nebula-pink', shadow: 'rgba(255,107,181,0.8)', size: 'w-6 h-6', isStar: true }
-  ].sort((a,b) => a.dist - b.dist);
-
-  return (
-    <div className="fixed inset-0 z-[300] flex items-center justify-center pointer-events-auto p-6">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={onClose} />
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
-        className="relative w-full max-w-4xl bg-[#0A0C10]/90 border border-white/10 rounded-3xl p-8 shadow-2xl"
-      >
-        <button onClick={onClose} className="absolute top-6 right-6 text-gray-400 hover:text-white"><X className="w-6 h-6"/></button>
-        <h2 className="text-2xl font-bold text-white mb-2 flex items-center gap-2"><Orbit className="w-6 h-6 text-nebula-pink" /> Cosmic Distance Scale</h2>
-        <p className="text-gray-400 mb-6">Select up to 3 milestones to visualize the distance to {starData.star_name}.</p>
-        
-        <div className="flex flex-wrap gap-2 mb-8 border-b border-white/10 pb-6">
-          {DISTANCE_MILESTONES.map(obj => (
-            <button 
-              key={obj.name}
-              onClick={() => toggleMilestone(obj.name)}
-              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all border ${selectedNames.includes(obj.name) ? 'bg-nebula-pink text-white border-nebula-pink shadow-[0_0_10px_rgba(255,107,181,0.3)]' : 'bg-transparent text-gray-400 border-white/10 hover:border-white/30 hover:text-white'}`}
-            >
-              {obj.name}
-            </button>
-          ))}
-        </div>
-
-        <div className="relative py-12 overflow-x-auto">
-          <div className="absolute top-1/2 left-0 w-full min-w-[600px] h-[2px] bg-gradient-to-r from-blue-500 via-gray-600 to-nebula-pink -translate-y-1/2" />
-          
-          <div className="relative flex justify-between items-center w-full min-w-[600px]">
-            <AnimatePresence>
-              {journeyPoints.map(point => (
-                <motion.div 
-                  key={point.name}
-                  layout
-                  initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0 }}
-                  className="relative flex flex-col items-center px-4"
-                >
-                   <div className={`${point.size} ${point.color} rounded-full mb-4`} style={{ boxShadow: `0 0 15px ${point.shadow}` }} />
-                   <p className={`${point.isStar ? 'text-nebula-pink text-center whitespace-nowrap' : 'text-white whitespace-nowrap'} font-bold text-sm`}>{point.name}</p>
-                   <p className={`text-xs ${point.isStar ? 'text-nebula-pink/80' : 'text-gray-500'}`}>{point.label}</p>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
-        </div>
-
-        <div className="mt-8 bg-white/5 rounded-xl p-4 text-center">
-          <p className="text-gray-300 italic">
-            "Traveling at the speed of a commercial jet (900 km/h), it would take you 
-            <strong className="text-white mx-1">
-              {Math.round((dist * 9.461e12) / (900 * 24 * 365)).toLocaleString()} million years
-            </strong> 
-            to reach your star!"
-          </p>
-        </div>
-      </motion.div>
-    </div>
-  );
-};
-
 const glassBase = "bg-white/[0.03] backdrop-blur-md border border-white/10 shadow-[0_4px_24px_-8px_rgba(0,0,0,0.5)]";
 const glassHover = "hover:bg-white/[0.08] hover:border-white/20 transition-colors";
 
@@ -323,6 +147,15 @@ export default function MyStarPortal({ onBack }) {
   const [starData, setStarData] = useState(null);
   const [isMinimized, setIsMinimized] = useState(false);
   const [activeComparison, setActiveComparison] = useState(null);
+  const [clickedItem, setClickedItem] = useState(null);
+
+  useEffect(() => {
+    const handleItemClick = (e) => {
+      setClickedItem(e.detail);
+    };
+    window.addEventListener('mystar-item-click', handleItemClick);
+    return () => window.removeEventListener('mystar-item-click', handleItemClick);
+  }, []);
 
   // Dashboard Data
   const [capsules, setCapsules] = useState([]);
@@ -332,6 +165,28 @@ export default function MyStarPortal({ onBack }) {
   const [newCapsule, setNewCapsule] = useState({ message: '', open_on_date: '' });
   const [newWish, setNewWish] = useState({ wish_text: '', passcode: '' });
   const [unlockPasscodes, setUnlockPasscodes] = useState({});
+
+  useEffect(() => {
+    // Hide 3D UI while portal is open using a robust CSS class
+    document.body.classList.add('is-mystar-tracking');
+    
+    const elsToManage = ['app-header', 'bottom-controls', 'btn-toggle-features', 'corner-menubar', 'time-controller', 'side-panel'];
+    elsToManage.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+
+    return () => {
+      // Restore 3D UI when portal closes
+      document.body.classList.remove('is-mystar-tracking');
+      
+      const elsToShow = ['app-header', 'bottom-controls', 'btn-toggle-features', 'corner-menubar', 'time-controller'];
+      elsToShow.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = '';
+      });
+    };
+  }, []);
 
   const handleVerify = async (e) => {
     e.preventDefault();
@@ -420,15 +275,76 @@ export default function MyStarPortal({ onBack }) {
     }
   };
 
+  const handleDeleteWish = async (wishId) => {
+    if (!window.confirm('Are you sure you want to delete this wish?')) return;
+    try {
+      const res = await fetch(`/api/mystar/${starData.star_id}/wishes/${wishId}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        setWishes(wishes.filter(w => w.id !== wishId));
+      } else {
+        alert('Failed to delete wish');
+      }
+    } catch (e) {
+      alert('Network error');
+    }
+  };
+
   const handleLocateStar = () => {
     setIsMinimized(true);
-    window.dispatchEvent(new CustomEvent('locate-mystar', { detail: { starId: starData.star_id } }));
+    window.dispatchEvent(new CustomEvent('locate-mystar', { detail: { starId: starData.star_id, capsules, wishes } }));
   };
+
+  const activeCapsulesCount = capsules.filter(c => c.isLocked).length;
 
   if (isMinimized) {
     return (
+      <>
       <div className="fixed inset-0 pointer-events-none z-[200]">
         
+        {/* Item View Popup */}
+        <AnimatePresence>
+          {clickedItem && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[300] bg-[#050B14]/90 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-2xl max-w-md w-full pointer-events-auto"
+            >
+              <button onClick={() => setClickedItem(null)} className="absolute top-4 right-4 text-gray-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+              
+              {clickedItem.type === 'capsule' ? (
+                <div>
+                  <h3 className="text-2xl font-bold text-aurora-cyan flex items-center gap-2 mb-4">
+                    <Calendar className="w-6 h-6" /> Time Capsule
+                  </h3>
+                  <div className="text-sm text-gray-400 mb-4 pb-4 border-b border-white/10">Opens: {new Date(clickedItem.data.open_on_date).toLocaleDateString()}</div>
+                  {clickedItem.data.isLocked ? (
+                    <p className="text-gray-500 italic flex items-center gap-2"><Lock className="w-4 h-4"/> Message is sealed until open date.</p>
+                  ) : (
+                    <p className="text-white whitespace-pre-wrap">{clickedItem.data.message}</p>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <h3 className="text-2xl font-bold text-nebula-pink flex items-center gap-2 mb-4">
+                    <Star className="w-6 h-6" /> Secret Wish
+                  </h3>
+                  <div className="text-sm text-gray-400 mb-4 pb-4 border-b border-white/10">Made on: {new Date(clickedItem.data.created_at).toLocaleDateString()}</div>
+                  {clickedItem.data.unlocked ? (
+                    <p className="text-white whitespace-pre-wrap font-handwriting text-xl">{clickedItem.data.wish_text}</p>
+                  ) : (
+                    <p className="text-gray-500 italic flex items-center gap-2"><Lock className="w-4 h-4"/> This wish is locked. Unlock it in the dashboard to view it here.</p>
+                  )}
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Camera Controls Panel */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
@@ -485,33 +401,65 @@ export default function MyStarPortal({ onBack }) {
                Autopilot engaged. Your dedicated star is being tracked in the observatory. Feel free to drag the camera to rotate your view!
              </p>
 
+             <div className="flex flex-col gap-2 mb-4">
+               <div className="flex gap-2">
+                 <button 
+                   onClick={() => setActiveComparison('planet')}
+                   className="flex-1 py-2 bg-white/5 hover:bg-galaxy-blue/20 text-white hover:text-galaxy-blue rounded-lg transition-colors border border-white/10 hover:border-galaxy-blue/50 text-xs flex items-center justify-center gap-1"
+                 >
+                   <Maximize className="w-3.5 h-3.5" /> Planets
+                 </button>
+                 <button 
+                   onClick={() => setActiveComparison('star')}
+                   className="flex-1 py-2 bg-white/5 hover:bg-yellow-400/20 text-white hover:text-yellow-400 rounded-lg transition-colors border border-white/10 hover:border-yellow-400/50 text-xs flex items-center justify-center gap-1"
+                 >
+                   <Star className="w-3.5 h-3.5" /> Stars
+                 </button>
+               </div>
+               <div className="flex gap-2">
+                 <button 
+                   onClick={() => setActiveComparison('distance')}
+                   className="flex-1 py-2 bg-white/5 hover:bg-nebula-pink/20 text-white hover:text-nebula-pink rounded-lg transition-colors border border-white/10 hover:border-nebula-pink/50 text-xs flex items-center justify-center gap-1"
+                 >
+                   <Orbit className="w-3.5 h-3.5" /> Distance
+                 </button>
+                 <button 
+                   onClick={() => setActiveComparison('universe')}
+                   className="flex-1 py-2 bg-white/5 hover:bg-aurora-cyan/20 text-white hover:text-aurora-cyan rounded-lg transition-colors border border-white/10 hover:border-aurora-cyan/50 text-xs flex items-center justify-center gap-1"
+                 >
+                   <ZoomOut className="w-3.5 h-3.5" /> Scale
+                 </button>
+               </div>
+             </div>
+
              <button 
                onClick={() => {
                  setIsMinimized(false);
                  setActiveComparison(null);
                  window.dispatchEvent(new CustomEvent('stop-tracking-mystar'));
                }} 
-               className="w-full mt-2 py-2.5 bg-aurora-cyan/10 hover:bg-aurora-cyan/20 text-aurora-cyan font-bold rounded-lg transition-colors border border-aurora-cyan/30 text-sm flex items-center justify-center gap-2"
+               className="w-full py-2.5 bg-aurora-cyan/10 hover:bg-aurora-cyan/20 text-aurora-cyan font-bold rounded-lg transition-colors border border-aurora-cyan/30 text-sm flex items-center justify-center gap-2"
              >
                Return to Dashboard
              </button>
           </div>
         </motion.div>
         
-        <AnimatePresence>
-          {activeComparison === 'size' && (
-            <SizeComparisonOverlay starData={starData} onClose={() => setActiveComparison(null)} />
-          )}
-          {activeComparison === 'distance' && (
-            <DistanceComparisonOverlay starData={starData} onClose={() => setActiveComparison(null)} />
-          )}
-        </AnimatePresence>
       </div>
+        
+      {/* Comparison Overlays - Must be rendered even when minimized */}
+      <AnimatePresence>
+        {activeComparison === 'planet' && <PlanetComparison starData={starData} onClose={() => setActiveComparison(null)} />}
+        {activeComparison === 'star' && <StarComparison starData={starData} onClose={() => setActiveComparison(null)} />}
+        {activeComparison === 'distance' && <DistanceScale starData={starData} onClose={() => setActiveComparison(null)} />}
+        {activeComparison === 'universe' && <UniverseScale starData={starData} onClose={() => setActiveComparison(null)} />}
+      </AnimatePresence>
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen bg-transparent text-white font-sans overflow-x-hidden selection:bg-nebula-pink/30 selection:text-white relative">
+    <div className="min-h-screen bg-transparent text-white font-sans overflow-x-hidden overflow-y-auto h-screen pointer-events-auto selection:bg-nebula-pink/30 selection:text-white relative">
       <div className="fixed inset-0 bg-[#050508]/50 backdrop-blur-sm z-[-3]" />
       
       {/* Navigation */}
@@ -572,7 +520,42 @@ export default function MyStarPortal({ onBack }) {
                 <p className="text-xl text-gray-400">Unique Registry ID: {starData.unique_id}</p>
               </div>
 
-              <div className={`p-8 rounded-3xl ${glassBase} grid lg:grid-cols-3 gap-8`}>
+              {/* SCIENTIFIC PROFILE PANEL */}
+              <FadeIn delay={0.1}>
+                <StarInfoPanel starData={starData} />
+              </FadeIn>
+
+              {/* EDUCATIONAL MODULES */}
+              <FadeIn delay={0.15}>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
+                  <button onClick={() => setActiveComparison('planet')} className="p-6 bg-[#050B14]/80 backdrop-blur-xl border border-white/10 rounded-3xl hover:bg-white/5 transition-all flex flex-col items-center justify-center gap-4 group">
+                    <div className="w-16 h-16 rounded-full bg-blue-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <Maximize className="w-8 h-8 text-blue-400" />
+                    </div>
+                    <span className="font-bold text-sm text-center">Compare With Planets</span>
+                  </button>
+                  <button onClick={() => setActiveComparison('star')} className="p-6 bg-[#050B14]/80 backdrop-blur-xl border border-white/10 rounded-3xl hover:bg-white/5 transition-all flex flex-col items-center justify-center gap-4 group">
+                    <div className="w-16 h-16 rounded-full bg-yellow-400/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <Star className="w-8 h-8 text-yellow-400 fill-yellow-400" />
+                    </div>
+                    <span className="font-bold text-sm text-center">Compare With Stars</span>
+                  </button>
+                  <button onClick={() => setActiveComparison('distance')} className="p-6 bg-[#050B14]/80 backdrop-blur-xl border border-white/10 rounded-3xl hover:bg-white/5 transition-all flex flex-col items-center justify-center gap-4 group">
+                    <div className="w-16 h-16 rounded-full bg-nebula-pink/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <Orbit className="w-8 h-8 text-nebula-pink" />
+                    </div>
+                    <span className="font-bold text-sm text-center">Cosmic Distance</span>
+                  </button>
+                  <button onClick={() => setActiveComparison('universe')} className="p-6 bg-[#050B14]/80 backdrop-blur-xl border border-white/10 rounded-3xl hover:bg-white/5 transition-all flex flex-col items-center justify-center gap-4 group">
+                    <div className="w-16 h-16 rounded-full bg-aurora-cyan/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <ZoomOut className="w-8 h-8 text-aurora-cyan" />
+                    </div>
+                    <span className="font-bold text-sm text-center">Universe Scale</span>
+                  </button>
+                </div>
+              </FadeIn>
+
+              <div className={`p-8 rounded-3xl ${glassBase} grid lg:grid-cols-3 gap-8 mt-12`}>
                 <div className="space-y-6">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-full bg-nebula-pink/20 flex items-center justify-center">
@@ -646,6 +629,18 @@ export default function MyStarPortal({ onBack }) {
                     >
                       <Compass className="w-5 h-5" /> Locate in Galaxy
                     </button>
+                    
+                    <button 
+                      onClick={() => {
+                        handleLocateStar();
+                        setTimeout(() => {
+                          window.dispatchEvent(new CustomEvent('mystar-cinematic-journey', { detail: { starData, capsules, wishes } }));
+                        }, 1000);
+                      }}
+                      className="w-full px-6 py-3 bg-nebula-purple/20 hover:bg-nebula-purple/30 border border-nebula-purple/50 text-nebula-purple font-bold rounded-xl transition-all flex items-center justify-center gap-2 mt-4 shadow-[0_0_15px_rgba(138,43,226,0.2)]"
+                    >
+                      <Orbit className="w-5 h-5" /> Travel To My Star
+                    </button>
                   </div>
                 </div>
               </div>
@@ -655,8 +650,11 @@ export default function MyStarPortal({ onBack }) {
               {/* TIME CAPSULE */}
               <FadeIn delay={0.2} className={`p-8 rounded-3xl ${glassBase}`}>
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+                  <h2 className="text-2xl font-bold text-white flex items-center gap-3 w-full">
                     <Calendar className="text-aurora-cyan" /> Time Capsule
+                    <span className="text-sm font-normal bg-white/10 px-3 py-1 rounded-full ml-auto text-aurora-cyan border border-aurora-cyan/30">
+                      {activeCapsulesCount}/2 Active
+                    </span>
                   </h2>
                 </div>
                 
@@ -677,99 +675,134 @@ export default function MyStarPortal({ onBack }) {
                   ))}
                 </div>
 
-                <form onSubmit={handleAddCapsule} className="space-y-4 border-t border-white/10 pt-6">
-                  <h3 className="text-lg font-semibold text-white">Seal a New Capsule</h3>
-                  <textarea
-                    required
-                    rows="3"
-                    value={newCapsule.message}
-                    onChange={e => setNewCapsule({...newCapsule, message: e.target.value})}
-                    placeholder="Write a message for the future..."
-                    className="w-full p-3 bg-black/50 border border-white/10 rounded-lg text-white placeholder:text-gray-600 focus:border-aurora-cyan outline-none transition-colors"
-                  />
-                  <div className="flex gap-4">
-                    <div className="flex-1">
-                      <label className="block text-xs text-gray-400 mb-1">Open On Date</label>
-                      <input
-                        type="date"
-                        required
-                        value={newCapsule.open_on_date}
-                        min={new Date().toISOString().split('T')[0]}
-                        onChange={e => setNewCapsule({...newCapsule, open_on_date: e.target.value})}
-                        className="w-full p-3 bg-black/50 border border-white/10 rounded-lg text-white outline-none focus:border-aurora-cyan"
-                      />
+                {activeCapsulesCount < 2 ? (
+                  <form onSubmit={handleAddCapsule} className="space-y-4 border-t border-white/10 pt-6">
+                    <h3 className="text-lg font-semibold text-white">Seal a New Capsule</h3>
+                    <textarea
+                      required
+                      rows="3"
+                      value={newCapsule.message}
+                      onChange={e => setNewCapsule({...newCapsule, message: e.target.value})}
+                      placeholder="Write a message for the future..."
+                      className="w-full p-3 bg-black/50 border border-white/10 rounded-lg text-white placeholder:text-gray-600 focus:border-aurora-cyan outline-none transition-colors"
+                    />
+                    <div className="flex gap-4">
+                      <div className="flex-1">
+                        <label className="block text-xs text-gray-400 mb-1">Open On Date</label>
+                        <input
+                          type="date"
+                          required
+                          value={newCapsule.open_on_date}
+                          min={new Date().toISOString().split('T')[0]}
+                          onChange={e => setNewCapsule({...newCapsule, open_on_date: e.target.value})}
+                          className="w-full p-3 bg-black/50 border border-white/10 rounded-lg text-white outline-none focus:border-aurora-cyan"
+                        />
+                      </div>
+                      <button type="submit" className="self-end px-6 py-3 rounded-lg bg-aurora-cyan/20 text-aurora-cyan hover:bg-aurora-cyan/30 border border-aurora-cyan/50 font-bold transition-colors">
+                        Seal It
+                      </button>
                     </div>
-                    <button type="submit" className="self-end px-6 py-3 rounded-lg bg-aurora-cyan/20 text-aurora-cyan hover:bg-aurora-cyan/30 border border-aurora-cyan/50 font-bold transition-colors">
-                      Seal It
-                    </button>
+                  </form>
+                ) : (
+                  <div className="border-t border-white/10 pt-6 text-center">
+                    <p className="text-aurora-cyan font-bold">Limit Reached: 2/2 Capsules Created</p>
+                    <p className="text-sm text-gray-400 mt-1">You have reached the maximum number of time capsules.</p>
                   </div>
-                </form>
+                )}
               </FadeIn>
 
               {/* SECRET WISHES */}
               <FadeIn delay={0.4} className={`p-8 rounded-3xl ${glassBase}`}>
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+                  <h2 className="text-2xl font-bold text-white flex items-center gap-3 w-full">
                     <Star className="text-nebula-pink" /> Secret Wishes
+                    <span className="text-sm font-normal bg-white/10 px-3 py-1 rounded-full ml-auto text-nebula-pink border border-nebula-pink/30">
+                      {wishes.length}/3 Made
+                    </span>
                   </h2>
                 </div>
 
                 <div className="space-y-4 mb-8">
                   {wishes.length === 0 && <p className="text-gray-500 italic">No secret wishes made yet.</p>}
-                  {wishes.map(wish => (
-                    <div key={wish.id} className="p-4 rounded-xl bg-black/40 border border-white/10">
-                      <div className="flex justify-between items-start mb-3">
-                        <span className="text-sm text-gray-400">Made on: {new Date(wish.created_at).toLocaleDateString()}</span>
-                        {!wish.unlocked && <Lock className="w-4 h-4 text-nebula-pink" />}
-                      </div>
-                      
-                      {wish.unlocked ? (
-                        <p className="text-white whitespace-pre-wrap font-handwriting text-lg">{wish.wish_text}</p>
-                      ) : (
-                        <div className="flex gap-2">
-                          <input
-                            type="password"
-                            placeholder="Enter Passcode"
-                            value={unlockPasscodes[wish.id] || ''}
-                            onChange={e => setUnlockPasscodes({...unlockPasscodes, [wish.id]: e.target.value})}
-                            className="flex-1 p-2 bg-black/50 border border-white/10 rounded text-white text-sm outline-none focus:border-nebula-pink"
-                          />
-                          <button onClick={() => handleUnlockWish(wish.id)} className="px-4 py-2 bg-nebula-pink/20 text-nebula-pink hover:bg-nebula-pink/30 rounded border border-nebula-pink/50 text-sm font-bold transition-colors">
-                            Unlock
-                          </button>
+                  <AnimatePresence>
+                    {wishes.map(wish => (
+                      <motion.div 
+                        key={wish.id}
+                        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.8, y: -20, filter: "blur(10px)" }}
+                        transition={{ duration: 0.3 }}
+                        className="p-4 rounded-xl bg-black/40 border border-white/10 relative group"
+                      >
+                        <div className="flex justify-between items-start mb-3">
+                          <span className="text-sm text-gray-400">Made on: {new Date(wish.created_at).toLocaleDateString()}</span>
+                          <div className="flex items-center gap-3">
+                            <button 
+                              onClick={() => handleDeleteWish(wish.id)}
+                              className="text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                              title="Delete Wish"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                            {!wish.unlocked && <Lock className="w-4 h-4 text-nebula-pink" />}
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  ))}
+                        
+                        {wish.unlocked ? (
+                          <p className="text-white whitespace-pre-wrap font-handwriting text-lg">{wish.wish_text}</p>
+                        ) : (
+                          <div className="flex gap-2">
+                            <input
+                              type="password"
+                              placeholder="Enter Passcode"
+                              value={unlockPasscodes[wish.id] || ''}
+                              onChange={e => setUnlockPasscodes({...unlockPasscodes, [wish.id]: e.target.value})}
+                              className="flex-1 p-2 bg-black/50 border border-white/10 rounded text-white text-sm outline-none focus:border-nebula-pink"
+                            />
+                            <button onClick={() => handleUnlockWish(wish.id)} className="px-4 py-2 bg-nebula-pink/20 text-nebula-pink hover:bg-nebula-pink/30 rounded border border-nebula-pink/50 text-sm font-bold transition-colors">
+                              Unlock
+                            </button>
+                          </div>
+                        )}
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
                 </div>
 
-                <form onSubmit={handleAddWish} className="space-y-4 border-t border-white/10 pt-6">
-                  <h3 className="text-lg font-semibold text-white">Make a New Wish</h3>
-                  <textarea
-                    required
-                    rows="3"
-                    value={newWish.wish_text}
-                    onChange={e => setNewWish({...newWish, wish_text: e.target.value})}
-                    placeholder="Whisper your wish to the stars..."
-                    className="w-full p-3 bg-black/50 border border-white/10 rounded-lg text-white placeholder:text-gray-600 focus:border-nebula-pink outline-none transition-colors font-handwriting text-lg"
-                  />
-                  <div className="flex gap-4">
-                    <div className="flex-1">
-                      <label className="block text-xs text-gray-400 mb-1">Secret Passcode</label>
-                      <input
-                        type="password"
-                        required
-                        value={newWish.passcode}
-                        onChange={e => setNewWish({...newWish, passcode: e.target.value})}
-                        placeholder="••••••••"
-                        className="w-full p-3 bg-black/50 border border-white/10 rounded-lg text-white outline-none focus:border-nebula-pink"
-                      />
+                {wishes.length < 3 ? (
+                  <form onSubmit={handleAddWish} className="space-y-4 border-t border-white/10 pt-6">
+                    <h3 className="text-lg font-semibold text-white">Make a New Wish</h3>
+                    <textarea
+                      required
+                      rows="3"
+                      value={newWish.wish_text}
+                      onChange={e => setNewWish({...newWish, wish_text: e.target.value})}
+                      placeholder="Whisper your wish to the stars..."
+                      className="w-full p-3 bg-black/50 border border-white/10 rounded-lg text-white placeholder:text-gray-600 focus:border-nebula-pink outline-none transition-colors font-handwriting text-lg"
+                    />
+                    <div className="flex gap-4">
+                      <div className="flex-1">
+                        <label className="block text-xs text-gray-400 mb-1">Secret Passcode</label>
+                        <input
+                          type="password"
+                          required
+                          value={newWish.passcode}
+                          onChange={e => setNewWish({...newWish, passcode: e.target.value})}
+                          placeholder="••••••••"
+                          className="w-full p-3 bg-black/50 border border-white/10 rounded-lg text-white outline-none focus:border-nebula-pink"
+                        />
+                      </div>
+                      <button type="submit" className="self-end px-6 py-3 rounded-lg bg-nebula-pink/20 text-nebula-pink hover:bg-nebula-pink/30 border border-nebula-pink/50 font-bold transition-colors">
+                        Lock Wish
+                      </button>
                     </div>
-                    <button type="submit" className="self-end px-6 py-3 rounded-lg bg-nebula-pink/20 text-nebula-pink hover:bg-nebula-pink/30 border border-nebula-pink/50 font-bold transition-colors">
-                      Lock Wish
-                    </button>
+                  </form>
+                ) : (
+                  <div className="border-t border-white/10 pt-6 text-center">
+                    <p className="text-nebula-pink font-bold">Limit Reached: 3/3 Wishes Made</p>
+                    <p className="text-sm text-gray-400 mt-1">You have reached the maximum number of secret wishes.</p>
                   </div>
-                </form>
+                )}
 
               </FadeIn>
             </div>
@@ -779,6 +812,22 @@ export default function MyStarPortal({ onBack }) {
           </div>
         )}
       </div>
+
+      {/* COMPARISON OVERLAYS */}
+      <AnimatePresence>
+        {activeComparison === 'planet' && (
+          <PlanetComparison starData={starData} onClose={() => setActiveComparison(null)} />
+        )}
+        {activeComparison === 'star' && (
+          <StarComparison starData={starData} onClose={() => setActiveComparison(null)} />
+        )}
+        {activeComparison === 'distance' && (
+          <DistanceScale starData={starData} onClose={() => setActiveComparison(null)} />
+        )}
+        {activeComparison === 'universe' && (
+          <UniverseScale starData={starData} onClose={() => setActiveComparison(null)} />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -1080,7 +1080,7 @@ CSS (TIANGONG)
            targetPos.copy(this.earth.position);
         } else if (this.planetMeshes) {
            const pm = this.planetMeshes.find(p => p.data.id === targetId);
-           if (pm) targetPos.copy(pm.mesh.position);
+           if (pm && pm.mesh.visible) targetPos.copy(pm.mesh.position);
         }
         
         // Use timeScale to ensure speed matches real-time settings, and slow down base speed to be realistic (like ISS taking ~90 mins)
@@ -1689,6 +1689,12 @@ CSS (TIANGONG)
     const tempV = new THREE.Vector3();
     const upDir = this._lastUpDir || new THREE.Vector3(0,1,0);
     this.planetMeshes.forEach(pm => {
+      if (!pm.mesh || !pm.mesh.visible) {
+        const el = document.getElementById(`hud-marker-${pm.data.id}`);
+        if (el) el.classList.add('hidden');
+        return;
+      }
+      
       const el = document.getElementById(`hud-marker-${pm.data.id}`);
       if (!el) return;
       
@@ -4046,6 +4052,11 @@ CSS (TIANGONG)
       this._active3DStarDust = null;
     }
 
+    if (this._activeUserItemsGroup) {
+      this.scene.remove(this._activeUserItemsGroup);
+      this._activeUserItemsGroup = null;
+    }
+
     // 3. Clear active star and its flare elements
     if (this._active3DStar) {
       this._active3DStar.traverse(child => {
@@ -4624,6 +4635,80 @@ CSS (TIANGONG)
     this._supernovaRemnants.push(pulsarAssembly);
   }
 
+
+  renderUserItems(starData, capsules = [], wishes = []) {
+    console.log("renderUserItems called with capsules:", capsules, "wishes:", wishes);
+    if (!this._active3DStar) {
+      console.warn("renderUserItems aborted: no _active3DStar");
+      return;
+    }
+    
+    if (this._activeUserItemsGroup) {
+      this.scene.remove(this._activeUserItemsGroup);
+    }
+    
+    this._activeUserItemsGroup = new THREE.Group();
+    // Position it at the star
+    this._activeUserItemsGroup.position.copy(this._active3DStar.position);
+    this.scene.add(this._activeUserItemsGroup);
+
+    // 1. Draw Capsules (Golden octahedrons)
+    capsules.forEach((cap, idx) => {
+      const geo = new THREE.OctahedronGeometry(0.15, 0); // ~0.15 units size
+      const mat = new THREE.MeshStandardMaterial({
+        color: 0xffd700,
+        metalness: 0.8,
+        roughness: 0.2,
+        emissive: 0xaa8800,
+        emissiveIntensity: 0.2
+      });
+      const mesh = new THREE.Mesh(geo, mat);
+      
+      // Orbit params
+      const radius = 2.8 + (idx * 0.4);
+      const angle = (idx / Math.max(capsules.length, 1)) * Math.PI * 2;
+      
+      mesh.position.set(Math.cos(angle) * radius, (Math.random() - 0.5) * 0.5, Math.sin(angle) * radius);
+      mesh.userData = { type: 'capsule', data: cap, isUserItem: true };
+      
+      this._activeUserItemsGroup.add(mesh);
+    });
+
+    // 2. Draw Wishes (Glowing pink/purple wisps)
+    wishes.forEach((wish, idx) => {
+      // Create a glowing sprite
+      const canvas = document.createElement('canvas');
+      canvas.width = 64; canvas.height = 64;
+      const ctx = canvas.getContext('2d');
+      const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+      grad.addColorStop(0, 'rgba(255, 105, 180, 1)');
+      grad.addColorStop(0.2, 'rgba(255, 20, 147, 0.8)');
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 64, 64);
+      
+      const tex = new THREE.CanvasTexture(canvas);
+      const mat = new THREE.SpriteMaterial({
+        map: tex,
+        color: 0xffffff,
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      });
+      const sprite = new THREE.Sprite(mat);
+      sprite.scale.set(0.4, 0.4, 1);
+      
+      // Orbit params
+      const radius = 4.2 + (idx * 0.4);
+      const angle = (idx / Math.max(wishes.length, 1)) * Math.PI * 2 + Math.PI;
+      
+      sprite.position.set(Math.cos(angle) * radius, (Math.random() - 0.5) * 1.0, Math.sin(angle) * radius);
+      sprite.userData = { type: 'wish', data: wish, isUserItem: true };
+      
+      this._activeUserItemsGroup.add(sprite);
+    });
+  }
+
   viewStar3D(starData, instant = false) {
     if (!starData) return;
 
@@ -4664,7 +4749,7 @@ CSS (TIANGONG)
           this.controls.target.copy(worldPos);
           this.controls.update();
         } else {
-          this._transitionCamPos(targetCamPos, 2000);
+          this._transitionCamPos(targetCamPos, 2000, worldPos);
         }
       }
 
@@ -5294,15 +5379,17 @@ CSS (TIANGONG)
     }
 
     // Give it a mock 'data' property so flyTo zooms close to it like a planet
+    // Multiplying radius by 2.0 tricks flyTo into stopping further away so the star doesn't overlap the UI panels
     const flyTarget = {
       isPlanet: true, 
       mesh: this._active3DStar,
-      data: { size: radius }
+      data: { size: radius * 2.0 }
     };
 
     if (instant) {
       // Instantly jump to the star without the 3-second fly animation
-      const targetDist = Math.max(0.5, radius * 4.0);
+      // Match the distance logic used in flyTo (size * 4 = radius * 2 * 4 = radius * 8)
+      const targetDist = Math.max(0.5, radius * 8.0);
       const dir = new THREE.Vector3().subVectors(this.camera.position, this._active3DStar.position).normalize();
       if (dir.lengthSq() === 0) dir.set(0, 0, 1);
       const targetCamPos = this._active3DStar.position.clone().add(dir.multiplyScalar(targetDist));
@@ -5379,6 +5466,32 @@ CSS (TIANGONG)
     const dist = dir.length();
     dir.normalize();
 
+    const step = dist * 0.2; // Move 20% closer/farther
+    if (isZoomIn) {
+      if (dist > 10) this.camera.position.sub(dir.multiplyScalar(step));
+    } else {
+      if (dist < 100000) this.camera.position.add(dir.multiplyScalar(step));
+    }
+    this.controls.update();
+  }
+
+  travelToStarSequence(starData, capsules = [], wishes = []) {
+    console.log("travelToStarSequence called with capsules:", capsules, "wishes:", wishes);
+    if (typeof ui !== 'undefined' && ui.toast) {
+      ui.toast(`Initiating warp drive to ${starData.star_name || starData.unique_id}...`);
+    }
+
+    this.selectStar(starData);
+    this.flyTo(starData, 5000);
+
+    // After the flight finishes, automatically engage the photorealistic 3D view
+    setTimeout(() => {
+      console.log("travelToStarSequence setTimeout fired, isMyStarTracking:", window.isMyStarTracking);
+      if (window.isMyStarTracking) {
+        this.viewStar3D(starData, false);
+        this.renderUserItems(starData, capsules, wishes);
+      }
+    }, 5100);
   }
 
   flyTo(targetData, duration = 4000) {
@@ -6259,6 +6372,22 @@ CSS (TIANGONG)
         }
       }
 
+      if (this._activeUserItemsGroup) {
+        this._activeUserItemsGroup.rotation.y += 0.002;
+        // Make items throb/spin
+        this._activeUserItemsGroup.children.forEach(child => {
+          if (child.isMesh) {
+            child.rotation.x += 0.02;
+            child.rotation.y += 0.01;
+          } else if (child.isSprite) {
+            // scale pulsing
+            const time = performance.now() * 0.003;
+            const scale = 0.4 + Math.sin(time + child.id) * 0.1;
+            child.scale.set(scale, scale, 1);
+          }
+        });
+      }
+
       // Smooth Camera Slide towards the zoom goal (creating an immersive flight/closer movement feel)
       if (this._targetCamGoal && !this._isCinematicFlight) {
         const distToGoal = this.camera.position.distanceTo(this._targetCamGoal);
@@ -6389,6 +6518,38 @@ CSS (TIANGONG)
       this.controls.target.set(0, 0, 0);
     }
     this.controls.update();
+  }
+  _transitionCamPos(targetCamPos, duration, targetLookAt = null) {
+    const startTime = performance.now();
+    const startCamPos = this.camera.position.clone();
+    let startTarget = null;
+    if (this.controls && targetLookAt) {
+      startTarget = this.controls.target.clone();
+    }
+    
+    this._isCinematicFlight = true;
+
+    const anim = (now) => {
+      const t = Math.min(1, (now - startTime) / duration);
+      // Cinematic ease-in-out
+      const et = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+      this.camera.position.lerpVectors(startCamPos, targetCamPos, et);
+      
+      if (this.controls && targetLookAt && startTarget) {
+        this.controls.target.lerpVectors(startTarget, targetLookAt, et);
+        this.controls.update();
+      } else if (this.controls) {
+        this.controls.update();
+      }
+
+      if (t < 1) {
+        requestAnimationFrame(anim);
+      } else {
+        this._isCinematicFlight = false;
+      }
+    };
+    requestAnimationFrame(anim);
   }
 
   teleportToSurface(lat, lon, transitionDuration = 3500) {
@@ -6582,6 +6743,18 @@ CSS (TIANGONG)
         const currentDist = this.camera.position.distanceTo(this.controls.target);
         const dir = targetPos.clone().sub(this.camera.position).normalize();
         this._targetPanGoal = this.camera.position.clone().add(dir.multiplyScalar(currentDist));
+      }
+
+      // Check User Items First!
+      if (this._activeUserItemsGroup) {
+        const itemIntersects = this.raycaster.intersectObject(this._activeUserItemsGroup, true);
+        if (itemIntersects.length > 0) {
+          const hitItem = itemIntersects[0].object;
+          if (hitItem.userData && hitItem.userData.isUserItem) {
+            window.dispatchEvent(new CustomEvent('mystar-item-click', { detail: hitItem.userData }));
+            return; // don't open the standard panel
+          }
+        }
       }
 
       const panel = document.getElementById('celestial-info-panel');

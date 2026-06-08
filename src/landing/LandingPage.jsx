@@ -131,7 +131,7 @@ const StarrySky = () => {
 
   return (
     <>
-      <div className="fixed inset-0 bg-[#0B0C10] z-[-3] bg-cover bg-center bg-no-repeat" style={{ backgroundImage: "url('/images/space_bg.png')" }} />
+      <img src="/images/space_bg.png?v=4" alt="Space Background" className="fixed inset-0 w-full h-full object-cover z-[-3]" />
       <div className="fixed inset-0 bg-black/40 z-[-3]" />
       {/* Nebula gradients */}
       <div className="fixed top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-nebula-purple/20 blur-[150px] z-[-2] pointer-events-none" />
@@ -375,8 +375,8 @@ export default function LandingPage({ onExplore }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#0B0C10] text-white font-sans overflow-x-hidden selection:bg-nebula-pink/30 selection:text-white relative">
-      <div className="fixed inset-0 bg-[#0B0C10] z-[-3] bg-cover bg-center bg-no-repeat" style={{ backgroundImage: "url('/images/space_bg.png')" }} />
+    <div className="min-h-screen bg-transparent text-white font-sans overflow-x-hidden selection:bg-nebula-pink/30 selection:text-white relative z-0">
+      <img src="/images/space_bg.png?v=4" alt="Space Background" className="fixed inset-0 w-full h-full object-cover z-[-3]" />
       <StarrySky />
       <Navbar onExplore={onExplore} onOpenMyStar={(source) => window.dispatchEvent(new CustomEvent('open-mystar', { detail: { source } }))} />
       

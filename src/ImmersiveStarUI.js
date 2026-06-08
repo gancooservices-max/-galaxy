@@ -1,0 +1,175 @@
+import { JourneySimulator } from './JourneySimulator.js';
+
+export class ImmersiveStarUI {
+  constructor(app) {
+    this.app = app;
+    this.$overlay = document.getElementById('immersive-star-overlay');
+    this.$closeBtn = document.getElementById('immersive-close-btn');
+    
+    // Header
+    this.$starName = document.getElementById('immersive-star-name');
+    this.$starType = document.getElementById('immersive-star-type');
+    
+    // Data Fields
+    this.$dataId = document.getElementById('imm-data-id');
+    this.$dataDist = document.getElementById('imm-data-dist');
+    this.$dataTemp = document.getElementById('imm-data-temp');
+    this.$dataMass = document.getElementById('imm-data-mass');
+    this.$dataLum = document.getElementById('imm-data-lum');
+    this.$dataRad = document.getElementById('imm-data-rad');
+    this.$dataClass = document.getElementById('imm-data-class');
+    
+    // Story
+    this.$storyText = document.getElementById('imm-story-text');
+    this.$storyFact = document.getElementById('imm-story-fact');
+
+    // Controls
+    this.$btnAutoRotate = document.getElementById('imm-btn-rotate');
+    this.$btnReset = document.getElementById('imm-btn-reset');
+    this.$btnFly = document.getElementById('imm-btn-fly');
+    this.$btnExplode = document.getElementById('imm-btn-explode');
+    
+    this._bindEvents();
+    this.activeStar = null;
+    this.isRotating = false;
+  }
+
+  _bindEvents() {
+    if (this.$closeBtn) {
+      this.$closeBtn.addEventListener('click', () => this.close());
+    }
+    
+    if (this.$btnAutoRotate) {
+      this.$btnAutoRotate.addEventListener('click', () => {
+        this.isRotating = !this.isRotating;
+        this.app.renderer.controls.autoRotate = this.isRotating;
+        this.$btnAutoRotate.style.color = this.isRotating ? '#38bdf8' : '#cbd5e1';
+      });
+    }
+
+    if (this.$btnReset) {
+      this.$btnReset.addEventListener('click', () => {
+        if (this.activeStar) {
+          this.app.renderer.viewStar3D(this.activeStar);
+        }
+      });
+    }
+
+    if (this.$btnFly) {
+      this.$btnFly.addEventListener('click', () => {
+        if (this.activeStar) {
+          const targetStar = this.activeStar;
+          this.close(false); // Hide UI
+          
+          if (!this.journeySim) {
+             this.journeySim = new JourneySimulator(this.app.renderer, 'journey-ui-layer');
+          }
+          this.journeySim.startJourney(targetStar);
+        }
+      });
+    }
+
+    if (this.$btnExplode) {
+      this.$btnExplode.addEventListener('click', () => {
+        if (this.activeStar) {
+          const targetStar = this.activeStar;
+          // Do not close with resetCamera, just hide UI so we can watch the explosion
+          this.close(false);
+          this.app.renderer.triggerSupernova(targetStar);
+        }
+      });
+    }
+  }
+
+  open(starData) {
+    this.activeStar = starData;
+    
+    // Hide standard UI elements robustly via CSS
+    document.body.classList.add('is-immersive-view');
+
+    // Generate procedural data since we don't have all DB fields
+    const proceduralData = this._generateProceduralData(starData);
+
+    // Populate UI
+    if (this.$starName) this.$starName.textContent = starData.name || 'Unknown Star';
+    if (this.$starType) this.$starType.textContent = proceduralData.fullType;
+    
+    if (this.$dataId) this.$dataId.textContent = starData.id || `HIP ${starData.hip}`;
+    if (this.$dataDist) this.$dataDist.textContent = `${starData.dist ? starData.dist.toFixed(1) : '?'} ly`;
+    if (this.$dataTemp) this.$dataTemp.textContent = `${proceduralData.temp} K`;
+    if (this.$dataMass) this.$dataMass.textContent = `${proceduralData.mass} M☉`;
+    if (this.$dataLum) this.$dataLum.textContent = `${proceduralData.lum} L☉`;
+    if (this.$dataRad) this.$dataRad.textContent = `${proceduralData.rad} R☉`;
+    if (this.$dataClass) this.$dataClass.textContent = proceduralData.spectralClass;
+
+    if (this.$storyText) this.$storyText.textContent = proceduralData.story;
+    if (this.$storyFact) this.$storyFact.textContent = proceduralData.fact;
+
+    // Show Overlay
+    this.$overlay.style.display = 'flex';
+    this.$overlay.classList.remove('hidden');
+
+    // Command Renderer to focus on star
+    this.app.renderer.viewStar3D(starData);
+    
+    // Tweak renderer for immersive mode
+    this.app.renderer.controls.autoRotate = true;
+    this.app.renderer.controls.autoRotateSpeed = 0.5;
+    this.isRotating = true;
+    if (this.$btnAutoRotate) this.$btnAutoRotate.style.color = '#38bdf8';
+  }
+
+  close(resetCamera = true) {
+    this.$overlay.style.display = 'none'; // Ensure it's hidden immediately
+    this.$overlay.classList.add('hidden');
+    
+    // Cache the star if we need it for an action before nulling
+    const prevStar = this.activeStar;
+    this.activeStar = null;
+    
+    this.isRotating = false;
+    this.app.renderer.controls.autoRotate = false;
+
+    // Show standard UI elements
+    document.body.classList.remove('is-immersive-view');
+
+    if (resetCamera) {
+      // Reset camera to galaxy view
+      this.app.renderer.resetView();
+    }
+  }
+
+  _generateProceduralData(star) {
+    const spectral = star.spect || '';
+    const mainClass = spectral.charAt(0) || 'G';
+    
+    let temp = 5800;
+    let mass = 1.0;
+    let lum = 1.0;
+    let rad = 1.0;
+    let fullType = 'Main Sequence Star';
+    let story = 'A distant star shining quietly in the cosmos.';
+    let fact = 'Stars like this are common throughout the Milky Way.';
+
+    switch(mainClass) {
+      case 'O': temp=30000; mass=16; lum=30000; rad=10; fullType='Blue Supergiant'; story='A massive, incredibly hot blue star burning furiously.'; fact='O-type stars have very short lifespans, ending in brilliant supernovae.'; break;
+      case 'B': temp=15000; mass=5; lum=100; rad=4; fullType='Blue-White Star'; story='A brilliant blue-white luminary, radiating immense energy.'; fact='Often found in young star clusters and OB associations.'; break;
+      case 'A': temp=8000; mass=2; lum=20; rad=1.5; fullType='White Star'; story='A bright white star, often visible to the naked eye.'; fact='Sirius and Vega are famous examples of A-type stars.'; break;
+      case 'F': temp=6500; mass=1.2; lum=3; rad=1.2; fullType='Yellow-White Star'; story='A slightly hotter cousin to our Sun, glowing with a bright golden-white hue.'; fact='F-type stars possess habitable zones that are wider than our Sun.'; break;
+      case 'G': temp=5500; mass=1; lum=1; rad=1; fullType='Yellow Dwarf'; story='A stable, long-lived star, similar to Earth\'s Sun.'; fact='G-type stars are prime candidates for hosting Earth-like planets.'; break;
+      case 'K': temp=4000; mass=0.7; lum=0.2; rad=0.8; fullType='Orange Dwarf'; story='A cool, reddish-orange star, slowly burning its fuel over billions of years.'; fact='K-type dwarfs are considered excellent candidates for extraterrestrial life due to their long stable lifespans.'; break;
+      case 'M': temp=3000; mass=0.3; lum=0.01; rad=0.3; fullType='Red Dwarf'; story='A small, dim red star, the most common type of star in the universe.'; fact='Red dwarfs can live for trillions of years, far longer than the current age of the universe.'; break;
+    }
+
+    return {
+      temp: temp + Math.floor(Math.random() * 500) - 250,
+      mass: (mass + (Math.random() * 0.2 - 0.1)).toFixed(2),
+      lum: (lum + (Math.random() * lum * 0.1)).toFixed(2),
+      rad: (rad + (Math.random() * 0.1)).toFixed(2),
+      spectralClass: spectral || mainClass + ' V',
+      fullType,
+      story,
+      fact
+    };
+  }
+}

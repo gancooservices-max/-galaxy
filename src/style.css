@@ -1,5 +1,5 @@
 /* ===================================================
-   StarVoyager — Design System & Full Stylesheet
+   StarVoyager â€” Design System & Full Stylesheet
    =================================================== */
 
 @tailwind base;
@@ -181,6 +181,17 @@ input, textarea {
 }
 
 /* ---------- Header ---------- */
+body.is-mystar-tracking #app-header,
+body.is-mystar-tracking #bottom-controls,
+body.is-mystar-tracking #btn-toggle-features,
+body.is-mystar-tracking #corner-menubar,
+body.is-mystar-tracking #time-controller,
+body.is-mystar-tracking #side-panel,
+body.is-mystar-tracking #planet-search-wrapper,
+body.is-mystar-tracking #satellite-search-wrapper {
+  display: none !important;
+}
+
 #app-header {
   position: fixed;
   top: 0;
@@ -503,8 +514,8 @@ input, textarea {
 
 .panel-inner {
   height: 100%;
-  background: linear-gradient(180deg, rgba(8, 14, 26, 0.9) 0%, rgba(3, 6, 12, 0.95) 100%);
-  border: 1px solid rgba(0, 212, 255, 0.15);
+  background: linear-gradient(180deg, rgba(10, 15, 30, 0.25) 0%, rgba(5, 8, 15, 0.45) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-right: none;
   border-radius: var(--radius-lg) 0 0 var(--radius-lg);
   backdrop-filter: blur(40px);
@@ -570,7 +581,7 @@ input, textarea {
 }
 
 .panel-title {
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 800;
   letter-spacing: -0.02em;
   color: var(--text-primary);
@@ -585,6 +596,50 @@ input, textarea {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.glass-btn-primary {
+  background: rgba(255, 215, 0, 0.15);
+  color: #FFD700;
+  font-weight: 600;
+  padding: 10px 16px;
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  border-radius: 8px;
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.1);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 14px;
+}
+.glass-btn-primary:hover {
+  background: rgba(255, 215, 0, 0.25);
+  border-color: rgba(255, 215, 0, 0.6);
+  box-shadow: 0 0 25px rgba(255, 215, 0, 0.3);
+  transform: translateY(-1px);
+}
+
+.glass-btn-secondary {
+  background: rgba(0, 255, 255, 0.1);
+  color: #00ffff;
+  font-weight: 600;
+  padding: 10px 16px;
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 6px;
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 13px;
+}
+.glass-btn-secondary:hover {
+  background: rgba(0, 255, 255, 0.2);
+  border-color: rgba(0, 255, 255, 0.6);
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
 }
 
 .type-badge {
@@ -664,7 +719,7 @@ input, textarea {
 }
 
 .panel-description {
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.6;
   color: #a0aec0;
   padding: 8px 0;
@@ -704,7 +759,7 @@ input, textarea {
 /* ---------- Tooltip ---------- */
 .star-tooltip {
   position: fixed;
-  z-index: 95;
+  z-index: 85;
   background: var(--bg-glass-2);
   border: 1px solid var(--border-mid);
   border-radius: var(--radius-md);
@@ -1660,7 +1715,7 @@ input, textarea {
   text-shadow: 0 0 10px rgba(0, 212, 255, 0.8);
 }
 .hud-reticle::before {
-  content: '▼';
+  content: 'â–¼';
 }
 
 .hud-planet-marker.active .hud-marker-dot {
@@ -1924,6 +1979,201 @@ input, textarea {
 
 .menu-btn.bh-highlight:hover {
   background: rgba(255, 136, 0, 0.05);
+  transform: scale(1.08);
+}
+
+.panel-content {
+  position: relative;
+  z-index: 2;
+}
+
+#celestial-info-name {
+  font-size: 28px;
+  font-weight: 300;
+  letter-spacing: 4px;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  color: #ffffff;
+  text-shadow: 0 0 10px rgba(255,255,255,0.3);
+}
+
+#celestial-info-type {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+  font-weight: 400;
+}
+
+.info-row-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 6px;
+}
+
+.info-label {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.info-value {
+  font-size: 13px;
+  font-weight: 400;
+  color: #ffffff;
+  text-align: right;
+  letter-spacing: 1px;
+}
+
+
+
+/* Features Side Panel (Left) */
+.corner-menubar {
+  position: fixed;
+  top: 80px;
+  left: 0;
+  width: 250px;
+  background: linear-gradient(180deg, rgba(8, 14, 26, 0.9) 0%, rgba(3, 6, 12, 0.95) 100%);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border: 1px solid rgba(0, 212, 255, 0.15);
+  border-left: none;
+  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  z-index: 90;
+  box-shadow: 20px 0 100px rgba(0, 212, 255, 0.05);
+  transition: transform var(--transition-slow);
+}
+
+.corner-menubar.collapsed {
+  transform: translateX(-110%);
+}
+
+.floating-toggle-btn {
+  position: fixed;
+  top: 80px;
+  left: 0;
+  background: rgba(8, 14, 26, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  border-left: none;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  color: var(--text-primary);
+  padding: 12px 18px;
+  font-family: var(--font-main);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  z-index: 85;
+  transition: all var(--transition-fast);
+  box-shadow: 4px 0 20px rgba(0,0,0,0.5);
+}
+
+.floating-toggle-btn:hover {
+  background: rgba(0, 212, 255, 0.15);
+  box-shadow: 4px 0 24px rgba(0,212,255,0.2);
+  color: #fff;
+}
+
+.floating-toggle-btn.hidden {
+  transform: translateX(-110%);
+  pointer-events: none;
+}
+
+.menu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(0, 212, 255, 0.15);
+  margin-bottom: 8px;
+}
+
+.menu-title {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  background: linear-gradient(90deg, #fff, var(--accent-cyan));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+#menu-collapse-btn {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 4px;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 10px;
+  padding: 6px 10px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#menu-collapse-btn:hover {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  border-color: rgba(0, 212, 255, 0.5);
+}
+
+#corner-menubar-items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: all 0.3s ease;
+}
+
+.menu-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.7);
+  padding: 10px 14px;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.menu-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.menu-btn.bh-highlight {
+  color: rgba(255, 170, 0, 0.7);
+}
+
+.menu-btn.bh-highlight:hover {
+  background: rgba(255, 136, 0, 0.05);
   border: 1px solid rgba(255, 136, 0, 0.2);
   color: #ffaa00;
 }
@@ -1931,4 +2181,69 @@ input, textarea {
 .menu-icon {
   font-size: 14px;
   opacity: 0.8;
+}
+
+body.is-mystar-tracking #app-header,
+body.is-mystar-tracking #bottom-controls,
+body.is-mystar-tracking #corner-menubar,
+body.is-mystar-tracking #time-controller,
+body.is-mystar-tracking #btn-toggle-features,
+body.is-mystar-tracking #side-panel,
+body.is-mystar-tracking #planet-search-wrapper,
+body.is-mystar-tracking #satellite-search-wrapper,
+body.is-immersive-view #app-header,
+body.is-immersive-view #bottom-controls,
+body.is-immersive-view #btn-toggle-features,
+body.is-immersive-view #corner-menubar,
+body.is-immersive-view #time-controller,
+body.is-immersive-view #side-panel,
+body.is-immersive-view #planet-search-wrapper,
+body.is-immersive-view #satellite-search-wrapper,
+body.is-immersive-view #celestial-info-panel,
+body.is-immersive-view #star-tooltip {
+  display: none !important;
+}
+
+.panel-description {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #d1d5db;
+  font-family: 'Playfair Display', serif;
+  letter-spacing: 0.02em;
+  background: rgba(255, 255, 255, 0.02);
+  padding: 14px;
+  border-radius: 8px;
+  border-left: 2px solid rgba(255, 215, 0, 0.3);
+  margin-top: 10px;
+}
+
+/* Star Registration Modal Animation */
+@keyframes modal-generate-from-star {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0;
+    filter: brightness(3) drop-shadow(0 0 50px #ffd700);
+  }
+  60% {
+    opacity: 1;
+    filter: brightness(1.5) drop-shadow(0 0 20px #ffd700);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+    filter: brightness(1) drop-shadow(0 0 0px #ffd700);
+  }
+}
+
+@keyframes overlay-fade-in {
+  from { background: rgba(0,0,0,0); }
+  to { background: rgba(0,0,0,0.8); }
+}
+
+.modal-animate-in {
+  animation: overlay-fade-in 0.6s ease forwards;
+}
+
+.modal-animate-in > div {
+  animation: modal-generate-from-star 0.7s cubic-bezier(0.2, 0.9, 0.3, 1.3) forwards !important;
 }

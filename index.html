@@ -11,7 +11,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/src/style.css" />
+  <link rel="stylesheet" href="./src/style.css" />
+  <link rel="stylesheet" href="./src/immersive-star.css" />
+  <link rel="stylesheet" href="./src/journey-style.css" />
   <script>
     window.onerror = function(msg, url, lineNo, columnNo, error) {
       const errDiv = document.createElement('div');
@@ -33,6 +35,8 @@
 <body>
   <!-- React Landing Page Root -->
   <div id="react-root" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999;"></div>
+  
+  <div id="journey-ui-layer"></div>
 
   <!-- Canvas Container -->
   <div id="canvas-container"></div>
@@ -189,7 +193,7 @@
         </div>
       </div>
       
-      <div id="star-ownership-block" class="star-ownership-block hidden" style="margin-top: 15px; padding: 12px; background: rgba(255, 215, 0, 0.1); border: 1px solid rgba(255, 215, 0, 0.4); border-radius: 6px; text-align: center;">
+      <div id="star-ownership-block" class="star-ownership-block hidden" style="margin-top: 15px; padding: 12px; border-radius: 8px; text-align: center;">
         <div id="star-owner-info" class="hidden">
           <span style="font-size: 16px; display: block; margin-bottom: 5px;">⭐ Premium Star</span>
           <span style="font-size: 13px; color: #aaa;">Owned by:</span>
@@ -197,13 +201,13 @@
           <p id="star-owner-message" style="font-size: 12px; font-style: italic; margin-top: 5px; margin-bottom: 15px; color: #ccc;"></p>
           
           <div id="star-live-auth-container" style="border-top: 1px solid rgba(255,215,0,0.2); padding-top: 12px; display: flex; flex-direction: column; gap: 8px;">
-            <input type="password" id="star-passkey-input" placeholder="Enter Secret Pass Key..." style="width: 100%; padding: 8px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,215,0,0.3); color: white; border-radius: 4px; outline: none; text-align: center;" />
-            <button id="btn-live-to-galaxy" style="background: linear-gradient(45deg, #00ffff, #0088ff); color: #000; font-weight: bold; padding: 8px; border: none; border-radius: 4px; cursor: pointer; width: 100%;">Live to Galaxy</button>
+            <input type="password" id="star-passkey-input" placeholder="Enter Secret Pass Key..." style="width: 100%; padding: 10px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,215,0,0.3); color: white; border-radius: 6px; outline: none; text-align: center; backdrop-filter: blur(5px);" />
+            <button id="btn-live-to-galaxy" class="glass-btn-secondary">Live to Galaxy</button>
             <p id="star-auth-status" class="hidden" style="color: #ff4444; font-size: 12px; margin: 0;">Only registered user can access</p>
           </div>
         </div>
         <div id="star-register-btn-container">
-          <button id="btn-register-star" style="background: linear-gradient(45deg, #ffd700, #ffa500); color: #000; font-weight: bold; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; width: 100%;">Register this Star</button>
+          <button id="btn-register-star" class="glass-btn-primary">Register this Star</button>
         </div>
       </div>
       <div class="panel-divider" id="star-planet-divider"></div>
@@ -541,6 +545,76 @@
   <div id="hud-targeting-layer" class="hud-targeting-layer"></div>
 
   <!-- Main script -->
+  <!-- Immersive Star Overlay -->
+  <div id="immersive-star-overlay" class="hidden">
+    <div class="immersive-header">
+      <div class="immersive-back-btn" id="immersive-close-btn">✕</div>
+      <div class="immersive-title-group">
+        <h1 class="immersive-star-name" id="immersive-star-name">HIP 0000</h1>
+        <span class="immersive-subtitle" id="immersive-star-type">Stellar Object</span>
+      </div>
+    </div>
+    
+    <div class="immersive-badges">
+      <div class="immersive-badge" style="cursor: pointer;" id="imm-btn-register">⭐ Register this Star</div>
+    </div>
+
+    <div class="immersive-layout">
+      <!-- Left Sidebar -->
+      <div class="immersive-left-sidebar">
+        <div class="immersive-card immersive-panel">
+          <h3 class="immersive-card-title">Stellar Data</h3>
+          <div class="data-grid">
+            <div class="data-item"><span class="data-label">Star ID</span><span class="data-value" id="imm-data-id">---</span></div>
+            <div class="data-item"><span class="data-label">Distance</span><span class="data-value" id="imm-data-dist">---</span></div>
+            <div class="data-item"><span class="data-label">Temperature</span><span class="data-value" id="imm-data-temp">---</span></div>
+            <div class="data-item"><span class="data-label">Spectral Class</span><span class="data-value" id="imm-data-class">---</span></div>
+            <div class="data-item"><span class="data-label">Mass</span><span class="data-value" id="imm-data-mass">---</span></div>
+            <div class="data-item"><span class="data-label">Radius</span><span class="data-value" id="imm-data-rad">---</span></div>
+            <div class="data-item"><span class="data-label">Luminosity</span><span class="data-value" id="imm-data-lum">---</span></div>
+          </div>
+        </div>
+        
+        <div class="immersive-card immersive-panel">
+          <h3 class="immersive-card-title">Position Journey</h3>
+          <div class="journey-timeline">
+            <div class="journey-line"></div>
+            <div class="journey-node">Earth</div>
+            <div class="journey-node">Solar System</div>
+            <div class="journey-node">Milky Way Galaxy</div>
+            <div class="journey-node active">Selected Star</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Center Hero -->
+      <div class="immersive-hero-viewport">
+      </div>
+
+      <!-- Right Sidebar -->
+      <div class="immersive-right-sidebar">
+        <div class="immersive-card immersive-panel" style="flex: 1;">
+          <h3 class="immersive-card-title">Story & Meaning</h3>
+          <div style="margin-top: 10px;">
+            <p class="story-text" id="imm-story-text">Loading...</p>
+            <div class="story-fact" id="imm-story-fact">Loading...</div>
+          </div>
+        </div>
+
+        <!-- Buttons Panel -->
+        <div class="immersive-card immersive-panel action-buttons-container">
+          <h3 class="immersive-card-title">Actions</h3>
+          <div class="action-buttons-grid">
+            <button class="hero-btn action-btn-sm" id="imm-btn-rotate">⟳ Auto Rotate</button>
+            <button class="hero-btn action-btn-sm" id="imm-btn-reset">↺ Reset View</button>
+            <button class="hero-btn action-btn-sm" id="imm-btn-fly">🚀 Fly To Star</button>
+            <button class="hero-btn action-btn-sm" id="imm-btn-explode">💥 Explode Star</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script type="module" src="/src/main.js"></script>
 </body>
 </html>

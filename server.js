@@ -1359,6 +1359,13 @@ app.get('/api/mystar/:star_id/capsules', async (req, res) => {
 app.post('/api/mystar/:star_id/capsules', async (req, res) => {
   try {
     const { message, open_on_date } = req.body;
+    
+    // Check limit (only active/future capsules)
+    const [countRes] = await pool.query('SELECT COUNT(*) as count FROM time_capsules WHERE star_id = ? AND open_on_date > NOW()', [req.params.star_id]);
+    if (countRes[0].count >= 2) {
+      return res.status(400).json({ error: 'Maximum limit of 2 Active Time Capsules reached.' });
+    }
+
     await pool.query(
       'INSERT INTO time_capsules (star_id, message, open_on_date) VALUES (?, ?, ?)',
       [req.params.star_id, message, open_on_date]
@@ -1384,6 +1391,13 @@ app.get('/api/mystar/:star_id/wishes', async (req, res) => {
 app.post('/api/mystar/:star_id/wishes', async (req, res) => {
   try {
     const { wish_text, passcode } = req.body;
+    
+    // Check limit
+    const [countRes] = await pool.query('SELECT COUNT(*) as count FROM star_wishes WHERE star_id = ?', [req.params.star_id]);
+    if (countRes[0].count >= 3) {
+      return res.status(400).json({ error: 'Maximum limit of 3 Secret Wishes reached.' });
+    }
+
     await pool.query(
       'INSERT INTO star_wishes (star_id, wish_text, passcode) VALUES (?, ?, ?)',
       [req.params.star_id, wish_text, passcode]
@@ -1410,6 +1424,16 @@ app.post('/api/mystar/:star_id/wishes/:wish_id/unlock', async (req, res) => {
     res.json({ success: true, wish_text: rows[0].wish_text });
   } catch (error) {
     res.status(500).json({ error: 'Failed to unlock wish' });
+  }
+});
+
+// 7. Delete Wish
+app.delete('/api/mystar/:star_id/wishes/:wish_id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM star_wishes WHERE id = ? AND star_id = ?', [req.params.wish_id, req.params.star_id]);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to delete wish' });
   }
 });
 
