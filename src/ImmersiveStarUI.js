@@ -28,10 +28,12 @@ export class ImmersiveStarUI {
     this.$btnReset = document.getElementById('imm-btn-reset');
     this.$btnFly = document.getElementById('imm-btn-fly');
     this.$btnExplode = document.getElementById('imm-btn-explode');
+    this.$btnComet = document.getElementById('imm-btn-comet');
     
     this._bindEvents();
     this.activeStar = null;
     this.isRotating = false;
+    this.isCometUnlocked = false;
   }
 
   _bindEvents() {
@@ -51,6 +53,15 @@ export class ImmersiveStarUI {
       this.$btnReset.addEventListener('click', () => {
         if (this.activeStar) {
           this.app.renderer.viewStar3D(this.activeStar);
+        }
+      });
+    }
+
+    if (this.$btnComet) {
+      this.$btnComet.addEventListener('click', () => {
+        // Button is only clickable when unlocked via authorization
+        if (this.app.renderer && this.app.renderer.triggerCinematicComet) {
+          this.app.renderer.triggerCinematicComet();
         }
       });
     }
@@ -90,9 +101,21 @@ export class ImmersiveStarUI {
     // Generate procedural data since we don't have all DB fields
     const proceduralData = this._generateProceduralData(starData);
 
+    // Get registration info
+    const reg = this.app.ui && this.app.ui.registeredStars && this.app.ui.registeredStars[starData.id];
+    let displayName = starData.name || 'Unknown Star';
+    if (reg && reg.starName) {
+      displayName = reg.starName;
+    }
+
     // Populate UI
-    if (this.$starName) this.$starName.textContent = starData.name || 'Unknown Star';
+    if (this.$starName) this.$starName.textContent = displayName;
     if (this.$starType) this.$starType.textContent = proceduralData.fullType;
+    
+    // Add owner details to fact/story if registered
+    if (reg && reg.owner) {
+      proceduralData.fact = `⭐ PREMIUM STAR: Owned by ${reg.owner}. ${reg.message ? `"${reg.message}"` : ''}`;
+    }
     
     if (this.$dataId) this.$dataId.textContent = starData.id || `HIP ${starData.hip}`;
     if (this.$dataDist) this.$dataDist.textContent = `${starData.dist ? starData.dist.toFixed(1) : '?'} ly`;
@@ -140,8 +163,8 @@ export class ImmersiveStarUI {
   }
 
   _generateProceduralData(star) {
-    const spectral = star.spect || '';
-    const mainClass = spectral.charAt(0) || 'G';
+    // Attempt to import or use real star info if available
+    const mainClass = star.type ? star.type.charAt(0) : 'G';
     
     let temp = 5800;
     let mass = 1.0;
@@ -161,12 +184,18 @@ export class ImmersiveStarUI {
       case 'M': temp=3000; mass=0.3; lum=0.01; rad=0.3; fullType='Red Dwarf'; story='A small, dim red star, the most common type of star in the universe.'; fact='Red dwarfs can live for trillions of years, far longer than the current age of the universe.'; break;
     }
 
+    // Adjust with actual data if available
+    let realTemp = temp + Math.floor(Math.random() * 500) - 250;
+    
+    // We can try to use some actual UI data
+    const uiDataClass = star.type || mainClass + ' V';
+
     return {
-      temp: temp + Math.floor(Math.random() * 500) - 250,
+      temp: realTemp,
       mass: (mass + (Math.random() * 0.2 - 0.1)).toFixed(2),
       lum: (lum + (Math.random() * lum * 0.1)).toFixed(2),
       rad: (rad + (Math.random() * 0.1)).toFixed(2),
-      spectralClass: spectral || mainClass + ' V',
+      spectralClass: uiDataClass,
       fullType,
       story,
       fact

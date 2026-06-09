@@ -1,19 +1,17 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LUMORA — Interactive 3D Sky Map</title>
-  <meta name="description" content="Explore the night sky in real-time 3D. Discover thousands of real stars with LUMORA — an interactive astronomy web app powered by WebGL." />
+  <title>LUMORA ΓÇö Interactive 3D Sky Map</title>
+  <meta name="description" content="Explore the night sky in real-time 3D. Discover thousands of real stars with LUMORA ΓÇö an interactive astronomy web app powered by WebGL." />
   <meta name="keywords" content="star map, sky map, astronomy, 3D stars, interactive space, constellations, night sky" />
-  <meta property="og:title" content="StarVoyager — Interactive 3D Sky Map" />
+  <meta property="og:title" content="StarVoyager ΓÇö Interactive 3D Sky Map" />
   <meta property="og:description" content="Explore 5000+ real stars in an immersive 3D night sky experience." />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./src/style.css" />
-  <link rel="stylesheet" href="./src/immersive-star.css" />
-  <link rel="stylesheet" href="./src/journey-style.css" />
+  <link rel="stylesheet" href="/src/style.css" />
   <script>
     window.onerror = function(msg, url, lineNo, columnNo, error) {
       const errDiv = document.createElement('div');
@@ -35,8 +33,6 @@
 <body>
   <!-- React Landing Page Root -->
   <div id="react-root" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999;"></div>
-  
-  <div id="journey-ui-layer"></div>
 
   <!-- Canvas Container -->
   <div id="canvas-container"></div>
@@ -52,9 +48,9 @@
     <div class="header-center">
       <div class="search-wrapper combined" id="search-wrapper">
         <select id="search-mode-select" class="search-mode-select" title="Select Search Mode">
-          <option value="all">🔍 Search</option>
-          <option value="named">⭐ Named</option>
-          <option value="constellation">✨ Constellation</option>
+          <option value="all">≡ƒöì Search</option>
+          <option value="named">Γ¡É Named</option>
+          <option value="constellation">Γ£¿ Constellation</option>
         </select>
 
         <!-- Mode: All Stars (Text Input) -->
@@ -82,7 +78,7 @@
       </div>
       
       <div class="search-wrapper" id="planet-search-wrapper">
-        <span class="search-icon">🪐</span>
+        <span class="search-icon">≡ƒ¬É</span>
         <input 
           type="text" 
           id="planet-search-input" 
@@ -92,12 +88,12 @@
           readonly
           style="cursor: pointer;"
         />
-        <span class="search-icon-arrow">▼</span>
+        <span class="search-icon-arrow">Γû╝</span>
         <div id="planet-search-dropdown" class="search-dropdown hidden"></div>
       </div>
       
       <div class="search-wrapper" id="satellite-search-wrapper" style="margin-left: 10px;">
-        <span class="search-icon">🛰️</span>
+        <span class="search-icon">≡ƒ¢░∩╕Å</span>
         <input 
           type="text" 
           id="satellite-search-input" 
@@ -107,17 +103,17 @@
           readonly
           style="cursor: pointer;"
         />
-        <span class="search-icon-arrow">▼</span>
+        <span class="search-icon-arrow">Γû╝</span>
         <div id="satellite-search-dropdown" class="search-dropdown hidden"></div>
       </div>
     </div>
     <div class="header-right">
       <div id="star-count" class="stat-badge">
-        <span class="stat-icon">⭐</span>
+        <span class="stat-icon">Γ¡É</span>
         <span id="star-count-num">0</span> stars
       </div>
       <button id="btn-toggle-time" class="stat-badge" style="cursor: pointer; background: rgba(255, 255, 255, 0.1);">
-        <span class="stat-icon" id="time-pause-icon">⏸️</span>
+        <span class="stat-icon" id="time-pause-icon">ΓÅ╕∩╕Å</span>
         <span id="time-clock">Loading Time...</span>
       </button>
     </div>
@@ -127,7 +123,7 @@
   
   <!-- Features Panel Toggle Button -->
   <button id="btn-toggle-features" class="floating-toggle-btn" title="Open Features">
-    <span>☰</span>
+    <span>Γÿ░</span>
   </button>
 
   <!-- Corner Menubar (Features Panel) -->
@@ -135,34 +131,30 @@
     
     <div class="menu-header">
       <span class="menu-title">FEATURES</span>
-      <button id="menu-collapse-btn" title="Close Features">✕</button>
+      <button id="menu-collapse-btn" title="Close Features">Γ£ò</button>
     </div>
 
     <div id="corner-menubar-items">
     <button id="menu-btn-home" class="menu-btn">
-      <span class="menu-icon">🏠</span>
+      <span class="menu-icon">≡ƒÅá</span>
       <span>Home</span>
     </button>
     <button id="menu-btn-mystar" class="menu-btn">
-      <span class="menu-icon" style="color: #FFD700;">⭐</span>
+      <span class="menu-icon" style="color: #FFD700;">Γ¡É</span>
       <span style="color: #FFD700; font-weight: bold;">My Star</span>
     </button>
-    <button id="menu-btn-cinematic-comet" class="menu-btn">
-      <span class="menu-icon" id="comet-btn-icon">🔒</span>
-      <span id="comet-btn-text" style="color: #ccc;">Cinematic Comet</span>
-    </button>
     <button id="btn-constellations" class="menu-btn">
-      <span class="menu-icon">✨</span>
+      <span class="menu-icon">Γ£¿</span>
       <span>Constellations Map</span>
     </button>
     <button id="menu-btn-chandra" class="menu-btn">
-      <span class="menu-icon">🚀</span>
+      <span class="menu-icon">≡ƒÜÇ</span>
       <span>Chandrayaan</span>
     </button>
     
     <button id="btn-star-categories" class="menu-btn">
-      <span class="menu-icon">🏷️</span>
-      <span>Star Categories ▼</span>
+      <span class="menu-icon">≡ƒÅ╖∩╕Å</span>
+      <span>Star Categories Γû╝</span>
     </button>
     <div id="star-categories-dropdown" class="hidden" style="padding: 10px; background: rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; margin: 0 10px 10px 10px; font-size: 13px;">
       <label style="display:flex; align-items:center; margin-bottom:6px; color:#6688ff; cursor:pointer;"><input type="checkbox" id="cat-O" checked style="margin-right:8px; cursor:pointer;"> O-type (Blue Supergiants)</label>
@@ -174,26 +166,13 @@
       <label style="display:flex; align-items:center; margin-bottom:0; color:#ff3333; cursor:pointer;"><input type="checkbox" id="cat-M" checked style="margin-right:8px; cursor:pointer;"> M-type (Red Giants)</label>
     </div>
     
-    <!-- Time Controller Widget moved to menu bar -->
-    <div id="time-controller" class="time-controller">
-      <div class="time-display-row">
-        <span class="time-clock" id="time-clock">2026-05-20 18:24:00</span>
-      </div>
-      
-      <div class="time-controls-panel" id="time-controls-panel">
-        <button id="btn-time-rewind" class="time-btn" title="Reverse / Slow down">⏪</button>
-        <button id="btn-time-play" class="time-btn" title="Pause / Play">⏸️</button>
-        <button id="btn-time-forward" class="time-btn" title="Fast Forward">⏩</button>
-        <button id="btn-time-now" class="time-btn" title="Reset to Current Time">now</button>
-      </div>
     </div>
-    
     </div>
   </div>
 
   <!-- Side Panel -->
   <aside id="side-panel" class="side-panel hidden">
-    <button id="side-panel-close" class="panel-close-btn" title="Close">✕</button>
+    <button id="side-panel-close" class="panel-close-btn" title="Close">Γ£ò</button>
     <div class="panel-inner">
       <div class="panel-star-visual" id="panel-visual-area">
         <div id="panel-star-glow" class="star-glow-display"></div>
@@ -203,76 +182,76 @@
         <img id="panel-planet-img-planet" class="planet-img-display hidden" src="" alt="Planet View" />
       </div>
       <div class="panel-header">
-        <h1 id="panel-star-name" class="panel-title">—</h1>
+        <h1 id="panel-star-name" class="panel-title">ΓÇö</h1>
         <div class="panel-badges">
-          <span id="panel-type-badge" class="type-badge">—</span>
-          <span id="panel-mag-badge" class="mag-badge">mag —</span>
+          <span id="panel-type-badge" class="type-badge">ΓÇö</span>
+          <span id="panel-mag-badge" class="mag-badge">mag ΓÇö</span>
         </div>
       </div>
       
-      <div id="star-ownership-block" class="star-ownership-block hidden" style="margin-top: 15px; padding: 12px; border-radius: 8px; text-align: center;">
+      <div id="star-ownership-block" class="star-ownership-block hidden" style="margin-top: 15px; padding: 12px; background: rgba(255, 215, 0, 0.1); border: 1px solid rgba(255, 215, 0, 0.4); border-radius: 6px; text-align: center;">
         <div id="star-owner-info" class="hidden">
-          <span style="font-size: 16px; display: block; margin-bottom: 5px;">⭐ Premium Star</span>
+          <span style="font-size: 16px; display: block; margin-bottom: 5px;">Γ¡É Premium Star</span>
           <span style="font-size: 13px; color: #aaa;">Owned by:</span>
           <strong id="star-owner-name" style="font-size: 15px; color: #ffd700; display: block;">Name</strong>
           <p id="star-owner-message" style="font-size: 12px; font-style: italic; margin-top: 5px; margin-bottom: 15px; color: #ccc;"></p>
           
           <div id="star-live-auth-container" style="border-top: 1px solid rgba(255,215,0,0.2); padding-top: 12px; display: flex; flex-direction: column; gap: 8px;">
-            <input type="password" id="star-passkey-input" placeholder="Enter Secret Pass Key..." style="width: 100%; padding: 10px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,215,0,0.3); color: white; border-radius: 6px; outline: none; text-align: center; backdrop-filter: blur(5px);" />
-            <button id="btn-live-to-galaxy" class="glass-btn-secondary">Live to Galaxy</button>
+            <input type="password" id="star-passkey-input" placeholder="Enter Secret Pass Key..." style="width: 100%; padding: 8px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,215,0,0.3); color: white; border-radius: 4px; outline: none; text-align: center;" />
+            <button id="btn-live-to-galaxy" style="background: linear-gradient(45deg, #00ffff, #0088ff); color: #000; font-weight: bold; padding: 8px; border: none; border-radius: 4px; cursor: pointer; width: 100%;">Live to Galaxy</button>
             <p id="star-auth-status" class="hidden" style="color: #ff4444; font-size: 12px; margin: 0;">Only registered user can access</p>
           </div>
         </div>
         <div id="star-register-btn-container">
-          <button id="btn-register-star" class="glass-btn-primary">Register this Star</button>
+          <button id="btn-register-star" style="background: linear-gradient(45deg, #ffd700, #ffa500); color: #000; font-weight: bold; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; width: 100%;">Register this Star</button>
         </div>
       </div>
       <div class="panel-divider" id="star-planet-divider"></div>
       <div class="panel-stats" id="star-planet-stats">
         <div class="stat-row star-stat">
           <span class="stat-label">Distance</span>
-          <span id="panel-dist" class="stat-value">—</span>
+          <span id="panel-dist" class="stat-value">ΓÇö</span>
         </div>
         <div class="stat-row star-stat">
           <span class="stat-label">Right Ascension</span>
-          <span id="panel-ra" class="stat-value">—</span>
+          <span id="panel-ra" class="stat-value">ΓÇö</span>
         </div>
         <div class="stat-row star-stat">
           <span class="stat-label">Declination</span>
-          <span id="panel-dec" class="stat-value">—</span>
+          <span id="panel-dec" class="stat-value">ΓÇö</span>
         </div>
         <div class="stat-row star-stat">
           <span class="stat-label">Spectral Type</span>
-          <span id="panel-spectral" class="stat-value">—</span>
+          <span id="panel-spectral" class="stat-value">ΓÇö</span>
         </div>
         <div class="stat-row star-stat">
           <span class="stat-label">Temperature</span>
-          <span id="panel-temp" class="stat-value">—</span>
+          <span id="panel-temp" class="stat-value">ΓÇö</span>
         </div>
         <div class="stat-row star-stat">
           <span class="stat-label">Magnitude</span>
-          <span id="panel-magnitude" class="stat-value">—</span>
+          <span id="panel-magnitude" class="stat-value">ΓÇö</span>
         </div>
         <!-- Planet Specific Rows -->
         <div class="stat-row planet-stat hidden">
           <span class="stat-label">Mass</span>
-          <span id="panel-mass" class="stat-value">—</span>
+          <span id="panel-mass" class="stat-value">ΓÇö</span>
         </div>
         <div class="stat-row planet-stat hidden">
           <span class="stat-label">Radius</span>
-          <span id="panel-radius" class="stat-value">—</span>
+          <span id="panel-radius" class="stat-value">ΓÇö</span>
         </div>
         <div class="stat-row planet-stat hidden">
           <span class="stat-label">Gravity</span>
-          <span id="panel-gravity" class="stat-value">—</span>
+          <span id="panel-gravity" class="stat-value">ΓÇö</span>
         </div>
         <div class="stat-row planet-stat hidden">
           <span class="stat-label">Orbital Period</span>
-          <span id="panel-orbit" class="stat-value">—</span>
+          <span id="panel-orbit" class="stat-value">ΓÇö</span>
         </div>
         <div class="stat-row planet-stat hidden">
           <span class="stat-label">Day Length</span>
-          <span id="panel-day" class="stat-value">—</span>
+          <span id="panel-day" class="stat-value">ΓÇö</span>
         </div>
       </div>
       <div class="panel-divider sat-stat hidden"></div>
@@ -280,53 +259,53 @@
         <h3 style="margin-top:0; color:#fff; font-size:14px; margin-bottom: 8px;">Basic Information</h3>
         <div class="stat-row">
           <span class="stat-label">Satellite Name</span>
-          <span id="panel-sat-name" class="stat-value">—</span>
+          <span id="panel-sat-name" class="stat-value">ΓÇö</span>
         </div>
         <div class="stat-row">
           <span class="stat-label">Country/Org.</span>
-          <span id="panel-sat-country" class="stat-value">—</span>
+          <span id="panel-sat-country" class="stat-value">ΓÇö</span>
         </div>
         <div class="stat-row">
           <span class="stat-label">Launch Date</span>
-          <span id="panel-sat-launch" class="stat-value">—</span>
+          <span id="panel-sat-launch" class="stat-value">ΓÇö</span>
         </div>
         <div class="stat-row">
           <span class="stat-label">Mission Type</span>
-          <span id="panel-sat-purpose" class="stat-value">—</span>
+          <span id="panel-sat-purpose" class="stat-value">ΓÇö</span>
         </div>
         <div class="stat-row">
           <span class="stat-label">Status</span>
-          <span id="panel-sat-status" class="stat-value">—</span>
+          <span id="panel-sat-status" class="stat-value">ΓÇö</span>
         </div>
         <div class="stat-row">
           <span class="stat-label">Distance from Earth</span>
-          <span id="panel-sat-dist" class="stat-value">—</span>
+          <span id="panel-sat-dist" class="stat-value">ΓÇö</span>
         </div>
       </div>
       <div class="panel-divider"></div>
       <div class="panel-description" id="panel-description"></div>
       <a id="panel-wiki-link" class="panel-wiki-btn hidden" href="#" target="_blank">
-        📖 Read more on Wikipedia
+        ≡ƒôû Read more on Wikipedia
       </a>
       <div style="display: flex; gap: 10px; margin-top: 15px;">
         <button class="panel-fly-btn" id="panel-fly-btn" style="flex: 1;">
-          <span>🚀</span> Fly To
+          <span>≡ƒÜÇ</span> Fly To
         </button>
         <button class="panel-fly-btn hidden" id="panel-view-star-btn" style="flex: 1; background: rgba(255, 200, 100, 0.15); border-color: rgba(255, 200, 100, 0.4);">
-          <span>☀️</span> View 3D Star
+          <span>ΓÿÇ∩╕Å</span> View 3D Star
         </button>
       </div>
       <div id="panel-telescope-controls" class="hidden" style="display: flex; gap: 10px; margin-top: 10px;">
         <button class="panel-fly-btn" id="panel-zoom-in-btn" style="flex: 1; background: rgba(100, 200, 255, 0.15); border-color: rgba(100, 200, 255, 0.4);">
-          <span>🔍+</span> Zoom In
+          <span>≡ƒöì+</span> Zoom In
         </button>
         <button class="panel-fly-btn" id="panel-zoom-out-btn" style="flex: 1; background: rgba(100, 200, 255, 0.15); border-color: rgba(100, 200, 255, 0.4);">
-          <span>🔍-</span> Zoom Out
+          <span>≡ƒöì-</span> Zoom Out
         </button>
       </div>
       <div id="panel-supernova-controls" class="hidden" style="margin-top: 10px;">
         <button class="panel-fly-btn" id="panel-supernova-btn" style="width: 100%; background: rgba(255, 50, 50, 0.18); border-color: rgba(255, 50, 50, 0.45); color: #ff9999; font-weight: bold; box-shadow: 0 0 10px rgba(255, 50, 50, 0.1);">
-          <span>💥</span> Trigger Supernova
+          <span>≡ƒÆÑ</span> Trigger Supernova
         </button>
       </div>
     </div>
@@ -343,15 +322,15 @@
   <!-- Tooltip -->
   <!-- Tooltip -->
   <div id="star-tooltip" class="star-tooltip hidden">
-    <div class="tooltip-name" id="tooltip-name">—</div>
+    <div class="tooltip-name" id="tooltip-name">ΓÇö</div>
     <div class="tooltip-details">
-      <span class="tooltip-detail" id="tooltip-mag">—</span>
-      <span class="tooltip-sep">·</span>
-      <span class="tooltip-detail" id="tooltip-dist">—</span>
-      <span class="tooltip-sep">·</span>
-      <span class="tooltip-detail" id="tooltip-temp">—</span>
+      <span class="tooltip-detail" id="tooltip-mag">ΓÇö</span>
+      <span class="tooltip-sep">┬╖</span>
+      <span class="tooltip-detail" id="tooltip-dist">ΓÇö</span>
+      <span class="tooltip-sep">┬╖</span>
+      <span class="tooltip-detail" id="tooltip-temp">ΓÇö</span>
     </div>
-    <div class="tooltip-type" id="tooltip-type">—</div>
+    <div class="tooltip-type" id="tooltip-type">ΓÇö</div>
   </div>
 
   <!-- Spaceship Cockpit HUD -->
@@ -395,39 +374,52 @@
     </div>
   </div>
 
+  <!-- Time Controller Widget -->
+  <div id="time-controller" class="time-controller">
+    <div class="time-display-row">
+      <span class="time-clock" id="time-clock">2026-05-20 18:24:00</span>
+    </div>
+    
+    <div class="time-controls-panel" id="time-controls-panel">
+      <button id="btn-time-rewind" class="time-btn" title="Reverse / Slow down">ΓÅ¬</button>
+      <button id="btn-time-play" class="time-btn" title="Pause / Play">ΓÅ╕∩╕Å</button>
+      <button id="btn-time-forward" class="time-btn" title="Fast Forward">ΓÅ⌐</button>
+      <button id="btn-time-now" class="time-btn" title="Reset to Current Time">now</button>
+    </div>
+  </div>
 
   <!-- Bottom Controls -->
   <nav id="bottom-controls" class="bottom-controls">
     <button id="btn-vr" class="ctrl-btn" title="Toggle VR Mode">
-      <span class="ctrl-icon">🥽</span>
+      <span class="ctrl-icon">≡ƒÑ╜</span>
       <span class="ctrl-label">VR Mode</span>
     </button>
     <button id="btn-reset" class="ctrl-btn" title="Reset View">
-      <span class="ctrl-icon">⟳</span>
+      <span class="ctrl-icon">Γƒ│</span>
       <span class="ctrl-label">Reset View</span>
     </button>
     <button id="btn-autorotate" class="ctrl-btn" title="Toggle Auto-Rotate">
-      <span class="ctrl-icon">↻</span>
+      <span class="ctrl-icon">Γå╗</span>
       <span class="ctrl-label">Auto Rotate</span>
     </button>
     <button id="btn-grid" class="ctrl-btn" title="Toggle Celestial Grid">
-      <span class="ctrl-icon">🌐</span>
+      <span class="ctrl-icon">≡ƒîÉ</span>
       <span class="ctrl-label">Celestial Grid</span>
     </button>
     <button id="btn-stars" class="ctrl-btn active" title="Toggle Background Stars">
-      <span class="ctrl-icon">⭐</span>
+      <span class="ctrl-icon">Γ¡É</span>
       <span class="ctrl-label">Hide Stars</span>
     </button>
     <button id="btn-deselect" class="ctrl-btn" title="Deselect Target" style="display: none;">
-      <span class="ctrl-icon">✖</span>
+      <span class="ctrl-icon">Γ£û</span>
       <span class="ctrl-label">Deselect</span>
     </button>
     <button id="btn-mission" class="ctrl-btn" title="Launch Chandrayaan Mission" style="display: none;">
-      <span class="ctrl-icon">🚀</span>
+      <span class="ctrl-icon">≡ƒÜÇ</span>
       <span class="ctrl-label">Chandrayaan</span>
     </button>
     <button id="btn-exit-telescope" class="ctrl-btn hidden" title="Exit Telescope View" style="background: rgba(255, 60, 60, 0.15); border-color: rgba(255, 60, 60, 0.3); color: #ff9999;">
-      <span class="ctrl-icon">🔭</span>
+      <span class="ctrl-icon">≡ƒö¡</span>
       <span class="ctrl-label">Exit Telescope</span>
     </button>
     <div class="ctrl-divider"></div>
@@ -463,7 +455,7 @@
     </div>
     <div class="map-container" id="map-container">
       <img src="/textures/earth_color.jpg" id="earth-map-img" alt="Earth Map" draggable="false">
-      <div id="map-pin" class="map-pin hidden">📍</div>
+      <div id="map-pin" class="map-pin hidden">≡ƒôì</div>
     </div>
     <div class="map-footer">
       <span id="map-coords" class="map-coords">Lat: --, Lon: --</span>
@@ -520,169 +512,35 @@
     </div>
   </div>
 
-  <!-- Already Registered Modal (3D Rotating Badge) -->
-  <div id="already-registered-modal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; perspective: 1500px; backdrop-filter: blur(5px);">
-    
-    <div class="badge-container" id="ultra-certificate-card">
-      <div class="badge-flipper" id="badge-flipper">
-        
-        <!-- Front of Badge -->
-        <div class="badge-face badge-front">
-          <div class="badge-glare"></div>
-          
-          <div class="badge-content">
-            <!-- Top Logo Ring -->
-            <div class="badge-logo-ring">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="#a38c6d" stroke="#c2a878" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 2px 2px rgba(0,0,0,0.8));">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-              </svg>
-            </div>
-
-            <div class="badge-brand">LUMORA OFFICIAL</div>
-            <h2 class="badge-title">STAR REGISTRY</h2>
-            
-            <div class="badge-info-panel">
-              <!-- 4 Rivets -->
-              <div class="rivet rivet-tl"></div>
-              <div class="rivet rivet-tr"></div>
-              <div class="rivet rivet-bl"></div>
-              <div class="rivet rivet-br"></div>
-
-              <div class="badge-row">
-                <small class="badge-label">STAR NAME</small>
-                <div id="reg-info-starname" class="badge-value-silver" style="font-size: 22px;">-</div>
-              </div>
-              
-              <div class="badge-row">
-                <small class="badge-label">REGISTERED BY</small>
-                <div id="reg-info-owner" class="badge-value-silver" style="font-size: 18px;">-</div>
-              </div>
-              
-              <div class="badge-row" style="border: none; display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 0;">
-                <div>
-                  <small class="badge-label">DATE</small>
-                  <div id="reg-info-date" class="badge-value-silver" style="font-size: 14px;">-</div>
-                </div>
-                <div class="drag-hint">DRAG TO ROTATE &rarr;</div>
-              </div>
-            </div>
-            
-          </div>
+  <!-- Already Registered Modal -->
+  <div id="already-registered-modal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #111; padding: 25px; border-radius: 8px; border: 1px solid #ffd700; width: 350px; text-align: center;">
+      <h2 style="color: #ffd700; margin-top: 0;">Γ¡É Already Registered</h2>
+      <p style="color: #aaa; margin-bottom: 20px;">This star has already been claimed and dedicated.</p>
+      
+      <div style="background: #222; border: 1px solid #333; padding: 15px; border-radius: 6px; text-align: left; margin-bottom: 20px;">
+        <div style="margin-bottom: 10px;">
+          <small style="color: #888;">Star Name</small>
+          <div id="reg-info-starname" style="color: #fff; font-size: 18px; font-weight: bold;">-</div>
         </div>
-
-        <!-- Back of Badge (Premium Dark) -->
-        <div class="badge-face badge-back">
-          <div class="badge-content" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; position: relative;">
-
-            <!-- Authentic Star Logo -->
-            <div class="badge-logo-ring">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="#a38c6d" stroke="#c2a878" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 2px 2px rgba(0,0,0,0.8));">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-              </svg>
-            </div>
-            
-            <div class="badge-brand" style="margin-top: 15px; font-size: 13px; color: #a38c6d; letter-spacing: 5px; font-weight: 900; text-shadow: 0 2px 4px rgba(0,0,0,0.8);">AUTHENTIC CLAIM</div>
-            
-            <div style="margin-top: 25px; font-size: 11px; color: #e6e0d8; max-width: 85%; text-align: center; border-top: 1px solid rgba(163,140,109,0.15); padding-top: 20px; font-family: 'Inter', sans-serif; line-height: 1.6; letter-spacing: 0.5px; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">
-              This badge verifies official registry in the <br/><span style="color: #fff; font-weight: bold; font-size: 12px;">Lumora Interstellar Database</span>.<br/><br/> Property rights are securely recorded.
-            </div>
-
-            <!-- Decorative Gold Accent Bottom -->
-            <div style="position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); width: 40px; height: 3px; background: linear-gradient(90deg, #4d4030, #a38c6d, #4d4030); border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.8), 0 0 10px rgba(163,140,109,0.3);"></div>
-          </div>
+        <div style="margin-bottom: 10px;">
+          <small style="color: #888;">Registered By</small>
+          <div id="reg-info-owner" style="color: #ffd700;">-</div>
         </div>
-        
-        <!-- Edge thickness simulation -->
-        <div class="badge-edge edge-top"></div>
-        <div class="badge-edge edge-bottom"></div>
-        <div class="badge-edge edge-left"></div>
-        <div class="badge-edge edge-right"></div>
-
+        <div>
+          <small style="color: #888;">Date</small>
+          <div id="reg-info-date" style="color: #ccc;">-</div>
+        </div>
       </div>
+      
+      <button id="btn-close-registered" style="padding: 8px 30px; background: #333; color: #fff; border: none; border-radius: 4px; cursor: pointer;">Close</button>
     </div>
-    
-    <button id="btn-close-registered" style="position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); padding: 12px 35px; background: linear-gradient(180deg, #333 0%, #111 100%); color: #ffd700; border: 1px solid rgba(255,215,0,0.4); border-radius: 30px; font-weight: bold; cursor: pointer; box-shadow: 0 5px 20px rgba(0,0,0,0.8), inset 0 1px 1px rgba(255,255,255,0.1); z-index: 10001; text-transform: uppercase; letter-spacing: 2px; transition: all 0.3s ease;">Close Badge</button>
   </div>
 
   <!-- HUD Targeting Layer -->
   <div id="hud-targeting-layer" class="hud-targeting-layer"></div>
 
   <!-- Main script -->
-  <!-- Immersive Star Overlay -->
-  <div id="immersive-star-overlay" class="hidden">
-    <div class="immersive-header">
-      <div class="immersive-back-btn" id="immersive-close-btn">✕</div>
-      <div class="immersive-title-group">
-        <h1 class="immersive-star-name" id="immersive-star-name">HIP 0000</h1>
-        <span class="immersive-subtitle" id="immersive-star-type">Stellar Object</span>
-      </div>
-    </div>
-    
-    <div class="immersive-badges" style="display: flex; gap: 10px; align-items: center;">
-      <div class="immersive-badge" style="cursor: pointer;" id="imm-btn-register">⭐ Register this Star</div>
-      <div id="imm-live-auth-container" class="hidden" style="display: flex; gap: 8px; align-items: center;">
-        <input type="password" id="imm-passkey-input" placeholder="Secret Pass Key..." style="padding: 6px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,215,0,0.3); color: white; border-radius: 4px; outline: none;" />
-        <button id="imm-btn-live-galaxy" style="background: linear-gradient(45deg, #00ffff, #0088ff); color: #000; font-weight: bold; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer;">Live to Galaxy</button>
-      </div>
-    </div>
-
-    <div class="immersive-layout">
-      <!-- Left Sidebar -->
-      <div class="immersive-left-sidebar">
-        <div class="immersive-card immersive-panel">
-          <h3 class="immersive-card-title">Stellar Data</h3>
-          <div class="data-grid">
-            <div class="data-item"><span class="data-label">Star ID</span><span class="data-value" id="imm-data-id">---</span></div>
-            <div class="data-item"><span class="data-label">Distance</span><span class="data-value" id="imm-data-dist">---</span></div>
-            <div class="data-item"><span class="data-label">Temperature</span><span class="data-value" id="imm-data-temp">---</span></div>
-            <div class="data-item"><span class="data-label">Spectral Class</span><span class="data-value" id="imm-data-class">---</span></div>
-            <div class="data-item"><span class="data-label">Mass</span><span class="data-value" id="imm-data-mass">---</span></div>
-            <div class="data-item"><span class="data-label">Radius</span><span class="data-value" id="imm-data-rad">---</span></div>
-            <div class="data-item"><span class="data-label">Luminosity</span><span class="data-value" id="imm-data-lum">---</span></div>
-          </div>
-        </div>
-        
-        <div class="immersive-card immersive-panel">
-          <h3 class="immersive-card-title">Position Journey</h3>
-          <div class="journey-timeline">
-            <div class="journey-line"></div>
-            <div class="journey-node">Earth</div>
-            <div class="journey-node">Solar System</div>
-            <div class="journey-node">Milky Way Galaxy</div>
-            <div class="journey-node active">Selected Star</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Center Hero -->
-      <div class="immersive-hero-viewport">
-      </div>
-
-      <!-- Right Sidebar -->
-      <div class="immersive-right-sidebar">
-        <div class="immersive-card immersive-panel" style="flex: 1;">
-          <h3 class="immersive-card-title">Story & Meaning</h3>
-          <div style="margin-top: 10px;">
-            <p class="story-text" id="imm-story-text">Loading...</p>
-            <div class="story-fact" id="imm-story-fact">Loading...</div>
-          </div>
-        </div>
-
-        <!-- Buttons Panel -->
-        <div class="immersive-card immersive-panel action-buttons-container">
-          <h3 class="immersive-card-title">Actions</h3>
-          <div class="action-buttons-grid">
-            <button class="hero-btn action-btn-sm" id="imm-btn-rotate">⟳ Auto Rotate</button>
-            <button class="hero-btn action-btn-sm" id="imm-btn-reset">↺ Reset View</button>
-            <button class="hero-btn action-btn-sm" id="imm-btn-fly">🚀 Fly To Star</button>
-            <button class="hero-btn action-btn-sm" id="imm-btn-explode">💥 Explode Star</button>
-            <button class="hero-btn action-btn-sm" id="imm-btn-comet" style="color: #ccc; grid-column: span 2; opacity: 0.4; pointer-events: none;">🔒 Cinematic Comet</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <script type="module" src="/src/main.js"></script>
 </body>
 </html>

@@ -438,6 +438,12 @@ async function main() {
     ui.$btnAutoRot.classList.remove('active');
   };
 
+  interaction.onDblClick = (star) => {
+    if (star && ui.onFlyTo) {
+      ui.onFlyTo(star);
+    }
+  };
+
   // Fly-to button in panel
   ui.onFlyTo = (star) => {
     renderer.flyTo(star);

@@ -682,6 +682,10 @@ export class StarRenderer {
   _createMilkyWay() {
     const geo = new THREE.SphereGeometry(4500000, 64, 64);
     const mat = new THREE.ShaderMaterial({
+      uniforms: {
+        uCameraPos: { value: new THREE.Vector3() },
+        uTime:      { value: 0.0 }
+      },
       vertexShader: `
         varying vec3 vWorldPosition;
         void main() {
@@ -692,6 +696,8 @@ export class StarRenderer {
       `,
       fragmentShader: `
         varying vec3 vWorldPosition;
+        uniform vec3 uCameraPos;
+        uniform float uTime;
         
         float hash(vec3 p) {
             p = fract(p * 0.3183099 + .1);
@@ -722,30 +728,34 @@ export class StarRenderer {
         }
 
         void main() {
+          vec3 offset = (uCameraPos * 0.00001) + vec3(uTime * 0.001, 0.0, uTime * 0.0005);
           vec3 dir = normalize(vWorldPosition);
           
-          float angle = 0.4;
-          float s = sin(angle), c = cos(angle);
-          mat3 rot = mat3(1.0, 0.0, 0.0,  0.0, c, -s,  0.0, s, c);
-          vec3 gDir = rot * dir;
+          // Lower frequency for larger, more realistic, fluffy cloud patches
+          float n1 = fbm(dir * 1.5 + offset);
+          float n2 = fbm(dir * 3.0 - offset * 0.5);
+          float n3 = fbm(dir * 6.0 + offset * 1.5);
           
-          float band = exp(-abs(gDir.y) * 4.0);
+          // Isolate patches to make them look like distant nebula clouds
+          float cloud1 = smoothstep(0.35, 0.75, n1);
+          float cloud2 = smoothstep(0.45, 0.85, n2);
+          float cloud3 = smoothstep(0.55, 0.95, n3);
           
-          float n1 = fbm(gDir * 4.0);
-          float n2 = fbm(gDir * 8.0 + vec3(12.3, 4.5, 6.7));
-          float n3 = fbm(gDir * 16.0);
+          // Colors matching the user's target image (Deep dark blue, cyan, and black)
+          // Increased brightness significantly so the effect is actually visible!
+          vec3 voidColor  = vec3(0.00, 0.00, 0.01); 
+          vec3 cloudBlue  = vec3(0.04, 0.12, 0.22);  // Rich dark blue/grey clouds
+          vec3 cloudCyan  = vec3(0.02, 0.18, 0.35);  // Subtle cyan highlights
+          vec3 faintGlow  = vec3(0.08, 0.12, 0.16);  // Faint greyish blue
           
-          vec3 col1 = vec3(0.04, 0.01, 0.08); // 80% Dark Deep purple
-          vec3 col2 = vec3(0.18, 0.05, 0.14); // 80% Dark Magenta
-          vec3 col3 = vec3(0.0, 0.18, 0.28);  // 80% Dark Cyan dust
-          vec3 col4 = vec3(0.45, 0.32, 0.18); // 80% Dark Core yellow/orange
+          vec3 finalColor = voidColor;
+          finalColor = mix(finalColor, cloudBlue, cloud1);
+          finalColor = mix(finalColor, faintGlow, cloud2 * 0.8);
+          finalColor += cloudCyan * cloud3 * 0.6;
           
-          vec3 finalColor = mix(col1, col2, n1 * band * 1.8);
-          finalColor = mix(finalColor, col3, n2 * band * 1.4);
-          finalColor += col4 * pow(band, 4.0) * n3 * 1.2;
-          
-          finalColor *= 0.38; // 80% dark level (glowing softly without washing out stars)
-          // Removed artificial ambient fog to keep space black
+          // Adding a very large scale dark dust layer to create empty voids
+          float darkVoid = fbm(dir * 1.8 - vec3(1.0, 2.0, 3.0));
+          finalColor *= smoothstep(0.1, 0.9, darkVoid);
           
           gl_FragColor = vec4(finalColor, 1.0);
         }
@@ -758,7 +768,9 @@ export class StarRenderer {
   }
 
   _createNebulae() {
-    // Completely removed colorful nebula shades as per user request to keep the space background clean and dark.
+    // Deliberately empty: Removed fake procedural noise clouds.
+    // Realistic deep space is a pure dark void. This allows the thousands of 
+    // calculated stars to shine clearly and crisply without looking like a painting.
   }
 
   /**
@@ -2195,29 +2207,35 @@ CSS (TIANGONG)
             }
             /* ---- main ---- */
             void main() {
-              vec3 p = normalize(vPos) * 5.0;
+              vec3 p = normalize(vPos) * 6.0; // Higher frequency for detail
 
               /* animated turbulence */
-              float t1 = fbm(p + vec3(uTime*0.07, uTime*0.04, uTime*0.05));
-              float t2 = fbm(p * 2.1 - vec3(uTime*0.035, 0.0, uTime*0.06));
+              float t1 = fbm(p + vec3(uTime*0.08, uTime*0.05, uTime*0.06));
+              float t2 = fbm(p * 2.5 - vec3(uTime*0.04, uTime*0.01, uTime*0.05));
+              float t3 = fbm(p * 5.0 + vec3(0.0, 0.0, uTime*0.03));
 
               /* granulation cells */
-              float cells = fbm(p * 4.0 + vec3(uTime*0.015));
-              float bright = smoothstep(0.32, 0.72, cells);
+              float cells = fbm(p * 15.0 + vec3(uTime*0.02));
+              float bright = smoothstep(0.3, 0.7, cells);
 
               /* combine */
-              float r = (t1 + t2) * 0.5;
+              float r = (t1 + t2 + t3*0.5) * 0.4;
 
-              /* colour layers: dark sunspot → base star → bright hot centre */
-              vec3 dark   = uColor * 0.35;
-              vec3 mid    = uColor * (0.8 + bright * 0.2);
-              vec3 hot    = mix(mid, vec3(1.0, 0.98, 0.90), smoothstep(0.55, 0.95, r));
-              vec3 col    = mix(dark, hot, smoothstep(0.1, 0.35, r));
+              /* colour layers: lava crust → deep red → fiery orange → bright yellow */
+              vec3 lavaCrust = vec3(0.15, 0.0, 0.0);
+              vec3 deepRed   = vec3(0.65, 0.05, 0.0);
+              vec3 fieryOrange = vec3(1.0, 0.3, 0.0);
+              vec3 whiteHot  = vec3(1.0, 0.9, 0.3);
 
-              /* limb darkening */
-              float limb  = smoothstep(-0.1, 0.3, dot(vNorm, vec3(0.0, 0.0, 1.0)));
+              vec3 col = mix(lavaCrust, deepRed, smoothstep(0.1, 0.4, r + bright*0.2));
+              col = mix(col, fieryOrange, smoothstep(0.4, 0.7, r + bright*0.4));
+              col = mix(col, whiteHot, smoothstep(0.7, 0.95, r + bright*0.5));
 
-              gl_FragColor = vec4(col * limb * 0.95, 1.0); // Calibrated brightness (no blowout)
+              /* realistic limb darkening */
+              float viewAngle = max(0.0, dot(vNorm, vec3(0.0, 0.0, 1.0)));
+              float limb = pow(viewAngle, 0.35); // Solar limb darkening profile
+
+              gl_FragColor = vec4(col * limb * 1.5, 1.0); // Vivid brightness
             }
           `,
           transparent: false
@@ -2225,7 +2243,7 @@ CSS (TIANGONG)
         this._sunMat = mat;
 
         // Add subtle corona glow
-        const glowGeo = new THREE.SphereGeometry(p.size * 1.06, 64, 64);
+        const glowGeo = new THREE.SphereGeometry(p.size * 1.25, 64, 64); // Increased corona size
         const glowMat = new THREE.ShaderMaterial({
           uniforms: {
             uTime: { value: 0.0 }
@@ -2261,16 +2279,22 @@ CSS (TIANGONG)
             }
 
             void main() {
-              // Edge intensity for scattering glow
-              float edge = pow(max(0.0, 1.0 - dot(vNormal, vec3(0.0, 0.0, 1.0))), 3.5);
+              float viewAngle = dot(vNormal, vec3(0.0, 0.0, 1.0));
+              // Edge intensity for scattering glow (softer, thicker corona)
+              float edge = pow(max(0.0, 1.0 - viewAngle), 2.2);
               
               // Dynamic solar wind spikes
-              vec3 p = normalize(vPosition) * 4.0;
-              float n = noise(p * 1.5 - vec3(0.0, uTime * 0.4, 0.0));
-              float spikes = 0.7 + 0.3 * sin(n * 6.28);
+              vec3 p = normalize(vPosition) * 5.0;
+              float n1 = noise(p * 1.2 - vec3(0.0, uTime * 0.3, uTime * 0.1));
+              float n2 = noise(p * 2.5 + vec3(uTime * 0.2, 0.0, 0.0));
+              float spikes = 0.4 + 0.6 * sin((n1 + n2 * 0.5) * 6.28);
               
-              vec3 coronaColor = vec3(1.0, 0.58, 0.15); // Warm solar orange-yellow
-              gl_FragColor = vec4(coronaColor, 1.0) * edge * spikes * 0.35; // Calibrated subtle glow
+              vec3 coronaOuter = vec3(0.85, 0.15, 0.0); // Rich deep red
+              vec3 coronaInner = vec3(1.0, 0.5, 0.05);  // Fiery orange/yellow
+              
+              vec3 finalColor = mix(coronaOuter, coronaInner, spikes * edge);
+              
+              gl_FragColor = vec4(finalColor, 1.0) * edge * spikes * 0.8; // Stronger, beautiful glow
             }
           `,
           side: THREE.BackSide, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false
@@ -5119,135 +5143,10 @@ CSS (TIANGONG)
     }
     // ═════════════════════════════════════════════════════════════════════════
 
-    // ── Realistic Interstellar Dust Nebula ────────────────────────────────────
-    // Build an organic, irregular puff texture (multiple overlapping soft blobs)
-    const makePuffTex = (seed) => {
-      const c = document.createElement('canvas');
-      c.width = 128; c.height = 128;
-      const ctx = c.getContext('2d');
-      // 3-5 overlapping off-center soft blobs to break the perfect-circle look
-      const count = 3 + Math.floor(seed * 3);
-      for (let j = 0; j < count; j++) {
-        const ox = 32 + ((seed * 7 + j * 13) % 1) * 64;
-        const oy = 32 + ((seed * 11 + j * 17) % 1) * 64;
-        const r  = 20 + ((seed * 19 + j * 23) % 1) * 35;
-        const a  = 0.18 + ((seed * 5 + j * 7) % 1) * 0.25;
-        const g  = ctx.createRadialGradient(ox, oy, 0, ox, oy, r);
-        g.addColorStop(0,   `rgba(255,255,255,${a.toFixed(2)})`);
-        g.addColorStop(0.5, `rgba(255,255,255,${(a * 0.4).toFixed(2)})`);
-        g.addColorStop(1,   'rgba(255,255,255,0)');
-        ctx.fillStyle = g;
-        ctx.fillRect(0, 0, 128, 128);
-      }
-      return new THREE.CanvasTexture(c);
-    };
-
-    // Pre-bake a few different puff textures for variety
-    const puffTextures = [
-      makePuffTex(0.12), makePuffTex(0.47),
-      makePuffTex(0.73), makePuffTex(0.31),
-    ];
-
-    const dustGroup = new THREE.Group();
-    dustGroup.name = 'dustClouds';
-    const spread = radius * 32;
-
-    // Helper: add one dust sprite
-    const addDust = (x, y, z, color, size, opacity, scaleX, scaleZ) => {
-      const tex = puffTextures[Math.floor(Math.random() * puffTextures.length)];
-      const m = new THREE.SpriteMaterial({
-        map: tex, color,
-        transparent: true, opacity,
-        blending: THREE.NormalBlending,
-        depthWrite: false
-      });
-      m._baseOpacity = opacity;
-      const sp = new THREE.Sprite(m);
-      sp.position.set(x, y, z);
-      // Elongated scale for streaky filament look
-      sp.scale.set(size * scaleX, size * scaleZ, 1);
-      dustGroup.add(sp);
-    };
-
-    // ── 4 Structural Filament Arms (like real ISM filaments) ─────────────────
-    // Each arm has a base angle and curves slightly
-    const armAngles = [0.3, 1.8, 3.5, 4.9]; // in radians
-    armAngles.forEach((baseAngle, armIdx) => {
-      const armLen = spread * (0.55 + Math.random() * 0.45);
-      const numAlong = 28 + Math.floor(Math.random() * 18);
-
-      for (let i = 0; i < numAlong; i++) {
-        const t = i / numAlong;
-        // Slightly curved arm path
-        const curve = baseAngle + t * 0.8 + (Math.sin(t * 5.0) * 0.15);
-        const dist  = armLen * (0.18 + t * 0.82);
-        // Perpendicular scatter (thicker at base, wispy at tip)
-        const scatter = spread * 0.06 * (1.0 - t * 0.5);
-        const px = Math.cos(curve) * dist + (Math.random() - 0.5) * scatter;
-        const pz = Math.sin(curve) * dist + (Math.random() - 0.5) * scatter;
-        const py = (Math.random() - 0.5) * spread * (0.12 + t * 0.28);
-
-        // Distance from star determines color:
-        // Close → blue-grey reflection nebula (star light scattered by dust)
-        // Mid   → warm amber/ochre (thermal emission / reddening)
-        // Far   → dark brown (absorbing dust lane)
-        const normDist = dist / spread;
-        let col;
-        if (normDist < 0.25) {
-          // Reflection nebula zone — blue-lit by the star
-          col = new THREE.Color(0.52, 0.60, 0.78).lerp(new THREE.Color(starColor.r, starColor.g, starColor.b), 0.25);
-        } else if (normDist < 0.6) {
-          // Warm illuminated dust
-          const t2 = (normDist - 0.25) / 0.35;
-          col = new THREE.Color(0.60, 0.48, 0.32).lerp(new THREE.Color(0.42, 0.36, 0.25), t2);
-        } else {
-          // Dark absorbing dust filaments at the edges
-          col = new THREE.Color(0.28, 0.22, 0.16);
-        }
-
-        // Arm-specific tint variation
-        if (armIdx === 1) col.lerp(new THREE.Color(0.35, 0.40, 0.55), 0.3);  // bluish arm
-        if (armIdx === 3) col.lerp(new THREE.Color(0.58, 0.50, 0.32), 0.3);  // golden arm
-
-        const baseOp = 0.04 + Math.random() * 0.06 - t * 0.02;
-        const opacity = Math.max(0.01, baseOp);
-        const puffSize = radius * (3.5 + Math.random() * 7.0) * (1.0 - t * 0.3);
-        // Elongate along the filament direction
-        const elongX = 1.0 + Math.random() * 1.4;
-        const elongZ = 0.5 + Math.random() * 0.8;
-
-        addDust(px, py, pz, col, puffSize, opacity, elongX, elongZ);
-      }
-    });
-
-    // ── Dense inner dust shell (close to star, faint blue reflection) ─────────
-    for (let i = 0; i < 30; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const elev  = (Math.random() - 0.5) * Math.PI * 0.35;
-      const dist  = spread * (0.1 + Math.random() * 0.22);
-      const px = Math.cos(angle) * Math.cos(elev) * dist;
-      const py = Math.sin(elev) * dist * 0.4;
-      const pz = Math.sin(angle) * Math.cos(elev) * dist;
-      const col = new THREE.Color(0.50, 0.57, 0.75)
-        .lerp(new THREE.Color(starColor.r * 1.2, starColor.g * 1.1, starColor.b), 0.4);
-      addDust(px, py, pz, col, radius * (2.0 + Math.random() * 4.5), 0.02 + Math.random() * 0.04, 1.0 + Math.random(), 0.6 + Math.random() * 0.8);
-    }
-
-    // ── Background faint dust haze (very subtle far-field) ───────────────────
-    for (let i = 0; i < 50; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const dist  = spread * (0.55 + Math.random() * 0.45);
-      const px = Math.cos(angle) * dist;
-      const pz = Math.sin(angle) * dist;
-      const py = (Math.random() - 0.5) * spread * 0.55;
-      const col = new THREE.Color(0.30, 0.26, 0.20).lerp(new THREE.Color(0.36, 0.40, 0.52), Math.random());
-      addDust(px, py, pz, col, radius * (4.0 + Math.random() * 9.0), 0.01 + Math.random() * 0.03, 1.0 + Math.random() * 2.0, 0.4 + Math.random() * 0.8);
-    }
-
-    // Attach to scene in world space (dust doesn't spin with star)
-    dustGroup.position.copy(worldPos);
-    this.scene.add(dustGroup);
-    this._active3DStarDust = dustGroup;
+    // ── Realistic Interstellar Dust Nebula (Matching User's Reference Image) ──
+    // Removed local background sphere because it was rendering in front of background stars.
+    // We will rely purely on the global milkyWaySphere for the deep space background.
+    this._active3DStarDust = null;
 
     // ── 5. Deterministic Procedural Exoplanet Generation ─────────────────────
     let seed = 0;
@@ -5800,6 +5699,14 @@ CSS (TIANGONG)
       if (this._sunGlow && this._sunGlow.material && this._sunGlow.material.uniforms && this._sunGlow.material.uniforms.uTime) {
         this._sunGlow.material.uniforms.uTime.value = elapsed;
       }
+      if (this.milkyWaySphere && this.milkyWaySphere.material.uniforms) {
+        this.milkyWaySphere.material.uniforms.uTime.value = elapsed;
+        this.milkyWaySphere.material.uniforms.uCameraPos.value.copy(this.camera.position);
+      }
+      if (this.nebulaSphere && this.nebulaSphere.material.uniforms) {
+        this.nebulaSphere.material.uniforms.uTime.value = elapsed;
+        this.nebulaSphere.material.uniforms.uCameraPos.value.copy(this.camera.position);
+      }
       if (this._sunFlareMaterials && this._sunFlareMaterials.length > 0) {
         for (const fm of this._sunFlareMaterials) {
           if (fm.uniforms && fm.uniforms.uTime) fm.uniforms.uTime.value = elapsed;
@@ -5810,6 +5717,30 @@ CSS (TIANGONG)
       if (!this.isTimePaused) {
         const timeDeltaMs = delta * this.timeScale * 1000;
         this.simulationTime = new Date(this.simulationTime.getTime() + timeDeltaMs);
+      }
+
+      // Update comet animation
+      if (this.cometAnim && this.cometGroup && this.cometGroup.visible) {
+        const time = performance.now();
+        const t = (time - this.cometAnim.startTime) / this.cometAnim.duration;
+        if (t >= 1.0) {
+          this.cometGroup.visible = false;
+        } else {
+          // Fast sweeping path
+          const curPos = this.cometAnim.startPos.clone().lerp(this.cometAnim.endPos, t);
+          this.cometGroup.position.copy(curPos);
+          
+          // Flash / scale effect
+          if (t < 0.1) {
+            const scale = Math.max(0.01, t * 10);
+            this.cometGroup.scale.setScalar(scale);
+          } else if (t > 0.8) {
+            const scale = Math.max(0.01, (1.0 - t) * 5);
+            this.cometGroup.scale.setScalar(scale);
+          } else {
+            this.cometGroup.scale.setScalar(1);
+          }
+        }
       }
 
       this._updateSatellites();
@@ -6353,11 +6284,12 @@ CSS (TIANGONG)
           const tNebula = THREE.MathUtils.clamp((240 - currentDist) / (240 - 40), 0, 1);
           const nebulaOpacity = tNebula * tNebula * (3.0 - 2.0 * tNebula);
           
-          this._active3DStarDust.traverse(child => {
-            if (child.isSprite && child.material && child.material._baseOpacity !== undefined) {
-              child.material.opacity = child.material._baseOpacity * nebulaOpacity;
-            }
-          });
+          if (this._active3DStarDust.material && this._active3DStarDust.material.uniforms) {
+            this._active3DStarDust.material.uniforms.uOpacity.value = nebulaOpacity;
+            this._active3DStarDust.material.uniforms.uTime.value = elapsed;
+            this._active3DStarDust.material.uniforms.uCameraPos.value.copy(this.camera.position);
+          }
+          
           // Organic drift rotation
           this._active3DStarDust.rotation.y = timeVal * 0.012;
         }
@@ -6368,6 +6300,26 @@ CSS (TIANGONG)
             const angle = p.phase + p.speed * timeVal * 0.4; // Stable, frame-independent animation
             p.mesh.position.set(Math.cos(angle) * p.radius, 0, Math.sin(angle) * p.radius);
             p.mesh.rotation.y = timeVal * 0.18 * Math.abs(p.speed); // Spin on axis
+          }
+        }
+      }
+
+      // Animate Comet
+      if (this.cometGroup && this.cometGroup.visible && this.cometAnim) {
+        const time = performance.now();
+        const progress = (time - this.cometAnim.startTime) / this.cometAnim.duration;
+        if (progress >= 1) {
+          this.cometGroup.visible = false;
+        } else {
+          this.cometGroup.position.lerpVectors(this.cometAnim.startPos, this.cometAnim.endPos, progress);
+          
+          // Scale/flash effect
+          if (progress < 0.1) {
+            this.cometGroup.scale.setScalar(progress * 10);
+          } else if (progress > 0.8) {
+            this.cometGroup.scale.setScalar((1.0 - progress) * 5);
+          } else {
+            this.cometGroup.scale.setScalar(1);
           }
         }
       }
@@ -6439,6 +6391,182 @@ CSS (TIANGONG)
       }
     };
     this.renderer.setAnimationLoop(loop);
+  }
+
+  triggerComet() {
+    if (!this.cometGroup) {
+       this.cometGroup = new THREE.Group();
+       this.scene.add(this.cometGroup);
+       
+       // Volumetric Shader-based Comet (No planes, no circles, perfectly smooth)
+       // Tail points along Z axis. Head is narrow, tail is wide.
+       const tailGeo = new THREE.CylinderGeometry(1.5, 120, 1800, 32, 1, true);
+       tailGeo.translate(0, -900, 0); 
+       // IMPORTANT: +Math.PI / 2 flips the geometry so the Head points FORWARD in the animation path
+       tailGeo.rotateX(Math.PI / 2); 
+       
+       const tailMat = new THREE.ShaderMaterial({
+         uniforms: {
+           color1: { value: new THREE.Color(0xffffff) }, // Blinding core
+           color2: { value: new THREE.Color(0x88ccff) }, // Blue coma
+           color3: { value: new THREE.Color(0x001166) }  // Deep space fade
+         },
+         vertexShader: `
+           varying vec2 vUv;
+           varying vec3 vNormal;
+           varying vec3 vViewPosition;
+           void main() {
+             vUv = uv;
+             vNormal = normalize(normalMatrix * normal);
+             vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+             vViewPosition = -mvPosition.xyz;
+             gl_Position = projectionMatrix * mvPosition;
+           }
+         `,
+         fragmentShader: `
+           varying vec2 vUv;
+           varying vec3 vNormal;
+           varying vec3 vViewPosition;
+           
+           uniform vec3 color1;
+           uniform vec3 color2;
+           uniform vec3 color3;
+           
+           // High-frequency noise
+           float rand(vec2 n) { return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453); }
+           float noise(vec2 p){
+               vec2 ip = floor(p); vec2 u = fract(p); u = u*u*(3.0-2.0*u);
+               return mix(mix(rand(ip),rand(ip+vec2(1.0,0.0)),u.x), mix(rand(ip+vec2(0.0,1.0)),rand(ip+vec2(1.0,1.0)),u.x),u.y);
+           }
+
+           void main() {
+             // vUv.y: 1 is Head, 0 is Tail end
+             float y = 1.0 - vUv.y; 
+             
+             // Volumetric Fresnel effect: makes edges completely transparent (no cylinder borders)
+             vec3 normal = normalize(vNormal);
+             vec3 viewDir = normalize(vViewPosition);
+             float rim = abs(dot(normal, viewDir));
+             float softEdge = smoothstep(0.0, 0.4, rim); // Fade edges beautifully
+             
+             // Dynamic Streaks
+             float streak1 = noise(vec2(vUv.x * 120.0, y * 10.0));
+             float streak2 = noise(vec2(vUv.x * 300.0, y * 4.0));
+             float streaks = (streak1 * 0.6 + streak2 * 0.4);
+             float streakIntensity = mix(1.0, streaks, clamp(y * 2.5, 0.0, 1.0));
+             
+             // Alpha fading to invisible
+             float alpha = pow(1.0 - y, 3.5) * softEdge * streakIntensity;
+             
+             // Colors
+             vec3 finalColor = mix(color1, color2, y * 5.0);
+             if (y > 0.2) {
+                 finalColor = mix(color2, color3, (y - 0.2) * 1.5);
+             }
+             
+             gl_FragColor = vec4(finalColor * 2.0, alpha * 1.5);
+           }
+         `,
+         transparent: true,
+         blending: THREE.AdditiveBlending,
+         depthWrite: false,
+         side: THREE.DoubleSide
+       });
+       
+       const tail = new THREE.Mesh(tailGeo, tailMat);
+       this.cometGroup.add(tail);
+       
+       // Add intense point light
+       const pointLight = new THREE.PointLight(0xaaffff, 200, 4000);
+       this.cometGroup.add(pointLight);
+    }
+    
+    // Extremely fast sweeping path across the camera view
+    const dist = 300 + Math.random() * 200; // Closer than before
+    const isRight = Math.random() > 0.5;
+    
+    const startOffset = new THREE.Vector3(
+      isRight ? (dist * 2) : -(dist * 2),
+      dist * (Math.random() - 0.5),
+      -dist * 1.5
+    );
+    
+    const endOffset = new THREE.Vector3(
+      isRight ? -(dist * 2) : (dist * 2),
+      startOffset.y - (dist * 0.5 + Math.random() * dist),
+      -dist * 0.5
+    );
+    
+    const startPos = startOffset.clone().applyQuaternion(this.camera.quaternion).add(this.camera.position);
+    const endPos = endOffset.clone().applyQuaternion(this.camera.quaternion).add(this.camera.position);
+    
+    this.cometGroup.position.copy(startPos);
+    this.cometGroup.lookAt(endPos);
+    this.cometGroup.visible = true;
+    this.cometGroup.scale.setScalar(0.01); // Start tiny for flash effect
+    
+    this.cometAnim = {
+      startPos,
+      endPos,
+      startTime: performance.now(),
+      // Very fast realistic duration (1 to 2 seconds)
+      duration: 1000 + Math.random() * 1000
+    };
+  }
+
+  triggerCinematicComet() {
+    if (!this.cometGroup) {
+      this.triggerComet(); // Initialize the group and meshes
+      this.cometGroup.visible = false;
+    }
+    
+    // Sweeping majestic path very close to the camera
+    const dist = 150; 
+    
+    // Sweep from far left to far right
+    const startOffset = new THREE.Vector3(-dist * 4, dist * 0.8, -dist * 0.8);
+    const endOffset = new THREE.Vector3(dist * 4, -dist * 0.2, -dist * 1.5);
+    
+    const startPos = startOffset.clone().applyQuaternion(this.camera.quaternion).add(this.camera.position);
+    const endPos = endOffset.clone().applyQuaternion(this.camera.quaternion).add(this.camera.position);
+    
+    this.cometGroup.position.copy(startPos);
+    this.cometGroup.lookAt(endPos);
+    this.cometGroup.visible = true;
+    this.cometGroup.scale.setScalar(0.01);
+    
+    this.cometAnim = {
+      startPos,
+      endPos,
+      startTime: performance.now(),
+      // Cinematic slow duration (6 seconds)
+      duration: 6000 
+    };
+
+    // Hide UI Panels for a pure cinematic experience
+    const uiElements = document.querySelectorAll('.immersive-panel, .immersive-overlay-header');
+    if (uiElements.length > 0) {
+      uiElements.forEach(el => {
+        el.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(20px)';
+        el.style.pointerEvents = 'none';
+      });
+      
+      // Restore UI after the comet finishes (approx 7 seconds)
+      setTimeout(() => {
+        uiElements.forEach(el => {
+          el.style.opacity = '1';
+          el.style.transform = 'translateY(0)';
+          el.style.pointerEvents = 'auto';
+        });
+      }, 7000);
+    }
+    
+    // Ensure the user has full freedom to look around from any position!
+    if (this.controls) {
+      this.controls.enabled = true;
+    }
   }
 
   stopRenderLoop() {
@@ -6695,10 +6823,64 @@ CSS (TIANGONG)
     let isDragging = false;
     this.renderer.domElement.addEventListener('pointerdown', () => isDragging = false);
     this.renderer.domElement.addEventListener('pointermove', () => isDragging = true);
+    
+    // Double-click to instantly fly to a star or planet
+    this.renderer.domElement.addEventListener('dblclick', (e) => {
+      if (this.missionSimulator && this.missionSimulator.active) return;
+      if (!this.isPlanetariumMode && !this.isFlyMode) return;
+      if (this._active3DStar) return; // Block background star clicks when viewing a star!
+
+      this.mouse = this.mouse || new THREE.Vector2();
+      this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+      this.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+      if (!this.raycaster) this.raycaster = new THREE.Raycaster();
+      this.raycaster.setFromCamera(this.mouse, this.camera);
+
+      // Check Planets First
+      let intersects = [];
+      if (this.planetMeshes) {
+        const meshes = this.planetMeshes.map(pm => pm.mesh);
+        intersects = this.raycaster.intersectObjects(meshes);
+      }
+
+      let hitObject = null;
+      if (intersects.length > 0) {
+        const hitMesh = intersects[0].object;
+        hitObject = this.planetMeshes.find(pm => pm.mesh === hitMesh);
+      }
+
+      // Check Stars if no planet hit
+      if (!hitObject && this.pointsMesh && this.pointsMesh.visible) {
+        this.raycaster.params.Points.threshold = 15.0; // easy to click
+        const starIntersects = this.raycaster.intersectObject(this.pointsMesh);
+        if (starIntersects.length > 0) {
+          const idx = starIntersects[0].index;
+          hitObject = {
+            isStar: true,
+            data: this.pointsMesh.geometry.attributes.starDataArray.array.slice(idx * 4, idx * 4 + 4),
+            position: starIntersects[0].point.clone()
+          };
+        }
+      }
+
+      if (hitObject) {
+        // If it's a star, trigger the full travel sequence so it renders the 3D star surface
+        if (hitObject.isStar) {
+          // Add required id property for viewStar3D
+          hitObject.data.id = hitObject.data[0];
+          this.travelToStarSequence(hitObject.data);
+        } else {
+          this.flyTo(hitObject, 3500);
+        }
+      }
+    });
+
     this.renderer.domElement.addEventListener('pointerup', (e) => {
       if (isDragging) return; // Ignore if it was a pan drag
       if (this.missionSimulator && this.missionSimulator.active) return; // Block clicks during Chandrayaan mission
       if (!this.isPlanetariumMode && !this.isFlyMode) return;
+      if (this._active3DStar) return; // Block background star clicks when viewing a star!
 
       this.mouse = this.mouse || new THREE.Vector2();
       this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;

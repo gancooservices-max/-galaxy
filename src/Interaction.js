@@ -26,17 +26,20 @@ export class Interaction {
   }
 
   enable() {
-    this._bound.move  = this._onMouseMove.bind(this);
-    this._bound.click = this._onClick.bind(this);
-    this._bound.touch = this._onTouchStart.bind(this);
+    this._bound.move     = this._onMouseMove.bind(this);
+    this._bound.click    = this._onClick.bind(this);
+    this._bound.dblclick = this._onDblClick.bind(this);
+    this._bound.touch    = this._onTouchStart.bind(this);
     this._canvas.addEventListener('mousemove',  this._bound.move,  { passive: true });
     this._canvas.addEventListener('click',      this._bound.click);
+    this._canvas.addEventListener('dblclick',   this._bound.dblclick);
     this._canvas.addEventListener('touchstart', this._bound.touch, { passive: true });
   }
 
   disable() {
     this._canvas.removeEventListener('mousemove',  this._bound.move);
     this._canvas.removeEventListener('click',      this._bound.click);
+    this._canvas.removeEventListener('dblclick',   this._bound.dblclick);
     this._canvas.removeEventListener('touchstart', this._bound.touch);
   }
 
@@ -77,6 +80,18 @@ export class Interaction {
     if (hit !== null && this.onClick) {
       const objData = (hit.type === 'planet' || hit.type === 'satellite') ? hit.data : this.stars[hit.index];
       this.onClick(objData);
+    }
+  }
+
+  _onDblClick(e) {
+    if (this.starRenderer && this.starRenderer.missionSimulator && this.starRenderer.missionSimulator.active) return;
+    const { x, y } = this._normalizeEvent(e);
+    this.mouse.set(x, y);
+
+    const hit = this._raycast();
+    if (hit !== null && this.onDblClick) {
+      const objData = (hit.type === 'planet' || hit.type === 'satellite') ? hit.data : this.stars[hit.index];
+      this.onDblClick(objData);
     }
   }
 

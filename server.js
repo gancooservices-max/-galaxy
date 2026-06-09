@@ -497,6 +497,29 @@ app.post('/api/stars/register', async (req, res) => {
   }
 });
 
+app.post('/api/stars/auth', async (req, res) => {
+  const { starId, secretKey } = req.body;
+  if (starId === undefined || !secretKey) {
+    return res.status(400).json({ error: 'Star ID and Secret Key are required.' });
+  }
+
+  try {
+    const [rows] = await pool.query('SELECT secret_key FROM registered_stars WHERE star_id = ?', [starId]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Star not found.' });
+    }
+    
+    if (rows[0].secret_key === secretKey) {
+      res.json({ success: true });
+    } else {
+      res.json({ success: false, error: 'Invalid secret key.' });
+    }
+  } catch (error) {
+    console.error('Error authenticating star:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 app.get('/api/stats', async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT COUNT(*) as total FROM registered_stars');

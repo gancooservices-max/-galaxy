@@ -85,6 +85,11 @@ export class UI {
              this.$starAuthStatus.classList.add('hidden');
              this.$starLiveAuthCon.classList.add('hidden');
              if (this.$panelViewStarBtn) this.$panelViewStarBtn.classList.remove('hidden');
+             
+             // Trigger comet passing animation to celebrate successful authorization!
+             if (this.renderer && this.renderer.triggerComet) {
+               this.renderer.triggerComet();
+             }
           } else {
              this.$starAuthStatus.textContent = 'Only registered user can access';
              this.$starAuthStatus.classList.remove('hidden');
@@ -132,6 +137,7 @@ export class UI {
     this.$btnGrid        = document.getElementById('btn-grid');
     this.$btnStars       = document.getElementById('btn-stars');
     this.$btnConstellations = document.getElementById('btn-constellations');
+    this.$btnCinematicComet = document.getElementById('menu-btn-cinematic-comet');
     this.$btnDeselect    = document.getElementById('btn-deselect');
     this.$btnMission     = document.getElementById('btn-mission');
     this.$loadingScreen  = document.getElementById('loading-screen');
@@ -316,56 +322,153 @@ export class UI {
     this.$tooltip.classList.add('hidden');
     this._tooltipVisible = false;
   }
+  openImmersiveUI(star) {
+    const isPlanet = !!star.isPlanet;
+    const isSatellite = !!star.isSatellite;
+    if (isPlanet || isSatellite) return;
+
+    if (!this.immersiveUI) {
+      this.immersiveUI = new ImmersiveStarUI({ renderer: this.renderer });
+      
+      const immRegBtn = document.getElementById('imm-btn-register');
+      if (immRegBtn && this.$btnRegisterStar) {
+        immRegBtn.addEventListener('click', () => {
+          this.$btnRegisterStar.click();
+        });
+      }
+    }
+    
+    const immRegBtn = document.getElementById('imm-btn-register');
+    const immAuthCon = document.getElementById('imm-live-auth-container');
+    const immPasskey = document.getElementById('imm-passkey-input');
+    const immBtnLive = document.getElementById('imm-btn-live-galaxy');
+
+    if (immRegBtn && immAuthCon) {
+      const immBtnComet = document.getElementById('imm-btn-comet');
+      const reg = this.registeredStars && this.registeredStars[star.id];
+      if (reg) {
+        immRegBtn.textContent = '⭐ Premium Star (Owned)';
+        immRegBtn.style.background = 'rgba(255,255,255,0.1)';
+        immRegBtn.style.color = '#fff';
+        immRegBtn.style.pointerEvents = 'auto';
+        immRegBtn.style.cursor = 'pointer';
+
+        if (this.authorizedStars && this.authorizedStars[star.id]) {
+          immAuthCon.classList.add('hidden');
+          if (immBtnComet) {
+            immBtnComet.style.opacity = '1';
+            immBtnComet.style.pointerEvents = 'auto';
+            immBtnComet.textContent = '🎬 Cinematic Comet';
+            immBtnComet.style.color = '#FFD700';
+          }
+        } else {
+          immAuthCon.classList.remove('hidden');
+          if (immBtnComet) {
+            immBtnComet.style.opacity = '0.4';
+            immBtnComet.style.pointerEvents = 'none';
+            immBtnComet.textContent = '🔒 Cinematic Comet';
+            immBtnComet.style.color = '#ccc';
+          }
+        }
+      } else {
+        immRegBtn.textContent = '⭐ Register this Star';
+        immRegBtn.style.background = 'linear-gradient(45deg, #ffd700, #ffa500)';
+        immRegBtn.style.color = '#000';
+        immRegBtn.style.pointerEvents = 'auto';
+        immAuthCon.classList.add('hidden');
+        if (immBtnComet) {
+          immBtnComet.style.opacity = '0.4';
+          immBtnComet.style.pointerEvents = 'none';
+          immBtnComet.textContent = '🔒 Cinematic Comet';
+          immBtnComet.style.color = '#ccc';
+        }
+      }
+
+      if (immBtnLive && !immBtnLive.dataset.bound) {
+        immBtnLive.dataset.bound = "true";
+        immBtnLive.addEventListener('click', async () => {
+          const pass = immPasskey.value.trim();
+          if (!pass) return alert("Please enter the secret key.");
+          immBtnLive.textContent = 'Verifying...';
+          
+          try {
+            const res = await fetch('/api/stars/auth', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ starId: this.immersiveUI.activeStar.id, secretKey: pass })
+            });
+            const data = await res.json();
+            if (data.success) {
+              if (!this.authorizedStars) this.authorizedStars = {};
+              this.authorizedStars[this.immersiveUI.activeStar.id] = true;
+              immAuthCon.classList.add('hidden');
+              
+              const immBtnComet = document.getElementById('imm-btn-comet');
+              if (immBtnComet) {
+                immBtnComet.style.opacity = '1';
+                immBtnComet.style.pointerEvents = 'auto';
+                immBtnComet.textContent = '🎬 Cinematic Comet';
+                immBtnComet.style.color = '#FFD700';
+              }
+              
+              alert("Access Granted! Live to Galaxy connection established. Cinematic Comet unlocked!");
+            } else {
+              alert("Invalid Secret Key!");
+            }
+          } catch (e) {
+            console.error(e);
+            alert("Error verifying key.");
+          } finally {
+            immBtnLive.textContent = 'Live to Galaxy';
+          }
+        });
+      }
+    }
+    
+    this.immersiveUI.open(star);
+    this.hideTooltip();
+    
+    if (this.$sidePanel) {
+      this.$sidePanel.classList.remove('visible');
+      setTimeout(() => this.$sidePanel.classList.add('hidden'), 300);
+    }
+  }
 
   /* ---- Side Panel ---- */
   openPanel(star) {
     this.currentStar = star;
+    
+    const isPlanet = !!star.isPlanet;
+    const isSatellite = !!star.isSatellite;
+
+    if (!isPlanet && !isSatellite) {
+      // It's a star, open immersive UI instead!
+      this.openImmersiveUI(star);
+      return;
+    }
     if (this.$panelViewStarBtn) {
       this.$panelViewStarBtn.innerHTML = '<span>👁️</span> View 3D Star';
       this.$panelViewStarBtn.style.background = 'rgba(255,255,255,0.05)';
       this.$panelViewStarBtn.style.borderColor = 'rgba(255,255,255,0.1)';
     }
-    const typeInfo = SPECTRAL_TYPES[star.type] || {};
-    const isPlanet = star.isPlanet;
-    const isSatellite = star.isSatellite;
+    let panelTitle = star.name || star.id;
+    let typeBadgeText = '—';
+    let typeBadgeClass = 'type-badge';
 
-    if (!isPlanet && !isSatellite) {
-      // It's a star, open immersive UI!
-      if (!this.immersiveUI) {
-        this.immersiveUI = new ImmersiveStarUI({ renderer: this.renderer });
-        
-        // Bind the new immersive register button to the exact same logic
-        const immRegBtn = document.getElementById('imm-btn-register');
-        if (immRegBtn && this.$btnRegisterStar) {
-          immRegBtn.addEventListener('click', () => {
-            this.$btnRegisterStar.click();
-          });
-        }
-      }
-      
-      // Update registration status visually on immersive panel before opening
-      const immRegBtn = document.getElementById('imm-btn-register');
-      if (immRegBtn) {
-        const reg = this.registeredStars && this.registeredStars[star.id];
-        if (reg) {
-          immRegBtn.textContent = '⭐ Premium Star (Owned)';
-          immRegBtn.style.background = 'rgba(255,255,255,0.1)';
-          immRegBtn.style.color = '#fff';
-          immRegBtn.style.pointerEvents = 'none';
-        } else {
-          immRegBtn.textContent = '⭐ Register this Star';
-          immRegBtn.style.background = 'rgba(255, 215, 0, 0.15)';
-          immRegBtn.style.color = '#ffd700';
-          immRegBtn.style.pointerEvents = 'auto';
-        }
-      }
-      
-      this.immersiveUI.open(star);
-      this.hideTooltip();
-      return;
+
+    
+    const satDisplayName = isSatellite ? (star.name || '').replace(/\(.*\)/, '').trim() : '';
+    
+    // Check if it's a registered star
+    const reg = this.registeredStars && this.registeredStars[star.id];
+    if (reg && reg.starName) {
+      panelTitle = reg.starName; // Display custom registered name!
     }
 
-    this.$panelName.textContent = star.name;
+    this.$panelName.textContent = isPlanet ? star.id : (isSatellite ? satDisplayName : panelTitle);
+
+
+
 
     // Show/hide entire star-planet stats section vs satellite section
     const showStarPlanet = !isSatellite;
@@ -401,8 +504,10 @@ export class UI {
       this.$panelWikiLink.href = pInfo.wiki;
       this.$panelWikiLink.classList.remove('hidden');
 
-      this.$panelTemp.textContent  = pInfo.temp;
-      this.$panelDesc.textContent  = pInfo.desc;
+      if (this.$panelTemp) this.$panelTemp.textContent = pInfo.temp || '—';
+      
+      this.$panelDesc = this.$panelDesc || document.getElementById('panel-description');
+      if (this.$panelDesc) this.$panelDesc.textContent = pInfo.desc || '';
     } else if (isSatellite) {
       this.$panelTypeBadge.textContent = 'Artificial Satellite';
       this.$panelTypeBadge.className   = `type-badge type-A`;
@@ -441,9 +546,12 @@ export class UI {
       }
       this.$panelSatDist.textContent = distanceText;
 
-      this.$panelDesc.textContent = fData 
-        ? `Fact: ${fData.fact}`
-        : `${star.name} is currently orbiting Earth. Its position and trajectory are tracked in real-time using live NORAD TLE data.`;
+      this.$panelDesc = this.$panelDesc || document.getElementById('panel-description');
+      if (this.$panelDesc) {
+        this.$panelDesc.textContent = fData 
+          ? `Fact: ${fData.fact}`
+          : `${star.name} is currently orbiting Earth. Its position and trajectory are tracked in real-time using live NORAD TLE data.`;
+      }
       
       // Show code badge in mag area
       const codeStr = star.code || (star.mesh && star.mesh.userData.satData && star.mesh.userData.satData.code) || '—';
@@ -467,10 +575,13 @@ export class UI {
 
       this.$panelRA.textContent        = star.ra   != null ? formatRA(star.ra)   : '—';
       this.$panelDec.textContent       = star.dec  != null ? formatDec(star.dec) : '—';
+      
+      const typeInfo = SPECTRAL_TYPES[badgeType] || {};
       this.$panelSpectral.textContent  = typeInfo.label || star.type || '—';
       this.$panelTemp.textContent      = typeInfo.temp || '—';
       this.$panelMagnitude.textContent = star.mag?.toFixed(2) || '—';
-      this.$panelDesc.textContent      = getStarDescription(star);
+      this.$panelDesc = this.$panelDesc || document.getElementById('panel-description');
+      if (this.$panelDesc) this.$panelDesc.textContent = getStarDescription(star);
 
       // Star glow color
       this.$panelGlow.style.background = `radial-gradient(circle, white 0%, ${star.color || '#cce8ff'} 30%, rgba(0,0,0,0) 70%)`;
@@ -498,13 +609,17 @@ export class UI {
         const reg = this.registeredStars && this.registeredStars[star.id];
         if (reg) {
           // It's owned!
+          this.$starOwnerInfo.style.display = 'block'; // force display block just in case
           this.$starOwnerInfo.classList.remove('hidden');
-          this.$starOwnerName.textContent = reg.owner;
+          this.$starOwnerName.textContent = reg.owner || 'Unknown Owner';
           this.$starOwnerMessage.textContent = reg.message ? `"${reg.message}"` : '';
           this.$starRegisterBtnCon.classList.add('hidden');
+          this.$starRegisterBtnCon.style.display = 'none';
         } else {
           // Available!
+          this.$starOwnerInfo.style.display = 'none'; // force hide
           this.$starOwnerInfo.classList.add('hidden');
+          this.$starRegisterBtnCon.style.display = 'block';
           this.$starRegisterBtnCon.classList.remove('hidden');
         }
       }
@@ -1007,12 +1122,36 @@ export class UI {
 
     if (this.$btnConstellations) {
       this.$btnConstellations.addEventListener('click', () => {
-        if (this.renderer) {
-          const on = this.renderer.toggleConstellations();
+        const on = this.renderer.toggleConstellations();
+        if (this.$btnConstellations) {
           this.$btnConstellations.classList.toggle('active', on);
-          if (on && !this.renderer.isPlanetariumMode) {
-            // Take the user to the Earth surface
-            this.renderer.teleportToSurface(19.0760, 72.8777, 2500);
+        }
+        if (on && !this.renderer.isPlanetariumMode) {
+          // Take the user to the Earth surface
+          this.renderer.teleportToSurface(19.0760, 72.8777, 2500);
+        }
+      });
+    }
+
+    if (this.$btnCinematicComet) {
+      let isCometUnlocked = false;
+      this.$btnCinematicComet.addEventListener('click', () => {
+        if (!isCometUnlocked) {
+          const key = prompt("Enter Secret Key to Unlock Cinematic Comet:");
+          if (key && key.toUpperCase() === "LUMORA") {
+            isCometUnlocked = true;
+            document.getElementById('comet-btn-icon').textContent = "🎬";
+            document.getElementById('comet-btn-text').textContent = "Cinematic Comet";
+            document.getElementById('comet-btn-text').style.color = "#FFD700";
+            if (this.renderer && this.renderer.triggerCinematicComet) {
+              this.renderer.triggerCinematicComet();
+            }
+          } else if (key !== null) {
+            alert("Invalid Secret Key!");
+          }
+        } else {
+          if (this.renderer && this.renderer.triggerCinematicComet) {
+            this.renderer.triggerCinematicComet();
           }
         }
       });
@@ -1080,20 +1219,74 @@ export class UI {
   }
 
   showAlreadyRegisteredModal(star) {
-    this.currentStar = star;
     const regInfo = this.registeredStars[star.id];
-    
+    if (!regInfo) return;
+
     document.getElementById('reg-info-starname').textContent = regInfo.starName || 'Unnamed Star';
     document.getElementById('reg-info-owner').textContent = regInfo.owner || 'Unknown';
     document.getElementById('reg-info-date').textContent = new Date(regInfo.date).toLocaleDateString();
-    document.getElementById('already-registered-modal').classList.remove('hidden');
-    document.getElementById('already-registered-modal').classList.add('modal-animate-in');
+    
+    const modal = document.getElementById('already-registered-modal');
+    modal.classList.remove('hidden');
+    modal.classList.add('modal-animate-in');
+    
+    // Add Drag to Rotate 3D effect
+    const flipper = document.getElementById('badge-flipper');
+    const container = document.getElementById('already-registered-modal');
+    if (flipper && !flipper.dataset.dragBound) {
+      flipper.dataset.dragBound = 'true';
+      
+      let isDragging = false;
+      let startX, startY;
+      let currentRotateX = 0;
+      let currentRotateY = 0;
+      
+      container.addEventListener('mousedown', (e) => {
+        // Only start drag if we aren't clicking the close button
+        if (e.target.closest('#btn-close-registered')) return;
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        flipper.style.transition = 'none'; // remove transition for smooth dragging
+      });
+      
+      window.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const deltaX = e.clientX - startX;
+        const deltaY = e.clientY - startY;
+        
+        // Adjust sensitivity (lower is less sensitive)
+        const newRotateY = currentRotateY + deltaX * 0.5;
+        const newRotateX = currentRotateX - deltaY * 0.5;
+        
+        flipper.style.transform = `rotateX(${newRotateX}deg) rotateY(${newRotateY}deg)`;
+      });
+      
+      window.addEventListener('mouseup', (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+        flipper.style.transition = 'transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)';
+        
+        // Save the new rotation state
+        const deltaX = e.clientX - startX;
+        const deltaY = e.clientY - startY;
+        currentRotateY += deltaX * 0.5;
+        currentRotateX -= deltaY * 0.5;
+        
+        // Optional: snap to front or back if we want, or just let it stay where user left it.
+        // We'll let it stay!
+      });
+    }
   }
 
   _setupRegistration() {
     if (this.$btnRegisterStar) {
       this.$btnRegisterStar.addEventListener('click', () => {
-        if (this.currentStar) {
+        if (!this.currentStar) return;
+        const reg = this.registeredStars && this.registeredStars[this.currentStar.id];
+        if (reg) {
+          this.showAlreadyRegisteredModal(this.currentStar);
+        } else {
           this.showRegistrationModal(this.currentStar);
         }
       });
