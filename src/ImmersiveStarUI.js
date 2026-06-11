@@ -31,9 +31,42 @@ export class ImmersiveStarUI {
     this.$btnComet = document.getElementById('imm-btn-comet');
     
     this._bindEvents();
+    this._wireCollapsibleCards();
     this.activeStar = null;
     this.isRotating = false;
     this.isCometUnlocked = false;
+
+    // Ensure overlay is fully hidden on init (fixes default-visible bug)
+    if (this.$overlay) {
+      this.$overlay.classList.remove('open');
+      this.$overlay.classList.add('hidden');
+    }
+  }
+
+  // ── Collapsible section toggle (Stellar, Journey, Story, Actions) ──
+  _wireCollapsibleCards() {
+    const cardIds = ['card-stellar', 'card-journey', 'card-story', 'card-actions'];
+
+    cardIds.forEach((cardId) => {
+      const card = document.getElementById(cardId);
+      if (!card) return;
+
+      // Find the toggle button inside this card's header
+      const btn = card.querySelector('.imm-toggle-btn');
+      if (!btn) return;
+
+      const toggle = (e) => {
+        e.stopPropagation();   // prevent header getting the event too
+        e.preventDefault();    // prevent any scroll/zoom on mobile
+        const isCollapsed = card.classList.toggle('collapsed');
+        btn.textContent = isCollapsed ? '▶' : '▼';
+        btn.title = isCollapsed ? 'Show' : 'Hide';
+      };
+
+      // Both click (desktop) and touchend (mobile) for reliability
+      btn.addEventListener('click',    toggle, { passive: false });
+      btn.addEventListener('touchend', toggle, { passive: false });
+    });
   }
 
   _bindEvents() {
@@ -128,9 +161,47 @@ export class ImmersiveStarUI {
     if (this.$storyText) this.$storyText.textContent = proceduralData.story;
     if (this.$storyFact) this.$storyFact.textContent = proceduralData.fact;
 
-    // Show Overlay
-    this.$overlay.style.display = 'flex';
-    this.$overlay.classList.remove('hidden');
+    // ── Populate Mobile Bottom Sheet ──────────────────────────
+    const mobId    = document.getElementById('mob-data-id');
+    const mobDist  = document.getElementById('mob-data-dist');
+    const mobTemp  = document.getElementById('mob-data-temp');
+    const mobClass = document.getElementById('mob-data-class');
+    const mobMass  = document.getElementById('mob-data-mass');
+    const mobRad   = document.getElementById('mob-data-rad');
+    const mobLum   = document.getElementById('mob-data-lum');
+    const mobStory = document.getElementById('mob-story-text');
+    const mobFact  = document.getElementById('mob-story-fact');
+
+    if (mobId)    mobId.textContent    = starData.id || `HIP ${starData.hip}`;
+    if (mobDist)  mobDist.textContent  = `${starData.dist ? starData.dist.toFixed(1) : '?'} ly`;
+    if (mobTemp)  mobTemp.textContent  = `${proceduralData.temp} K`;
+    if (mobClass) mobClass.textContent = proceduralData.spectralClass;
+    if (mobMass)  mobMass.textContent  = `${proceduralData.mass} M☉`;
+    if (mobRad)   mobRad.textContent   = `${proceduralData.rad} R☉`;
+    if (mobLum)   mobLum.textContent   = `${proceduralData.lum} L☉`;
+    if (mobStory) mobStory.textContent = proceduralData.story;
+    if (mobFact)  mobFact.textContent  = proceduralData.fact;
+
+    // Wire mobile action buttons (only once)
+    this._wireMobileButtons();
+
+    // Reset sheet state: fully collapsed + pull tab + zoom controls visible
+    const sheet       = document.getElementById('mobile-details-sheet');
+    const pullTab     = document.getElementById('mob-pull-tab');
+    const zoomCtrls   = document.getElementById('mob-zoom-controls');
+    if (sheet)     sheet.classList.remove('expanded');
+    if (pullTab)   pullTab.classList.remove('hidden');
+    if (zoomCtrls) zoomCtrls.style.display = 'flex'; // show zoom buttons
+
+    // Ensure overlay element exists before showing
+    if (!this.$overlay) {
+      this.$overlay = document.getElementById('immersive-star-overlay');
+    }
+    if (this.$overlay) {
+      this.$overlay.classList.remove('hidden');
+      // Use .open class for CSS-driven visibility (fixes default-visible bug)
+      this.$overlay.classList.add('open');
+    }
 
     // Command Renderer to focus on star
     this.app.renderer.viewStar3D(starData);
@@ -143,13 +214,26 @@ export class ImmersiveStarUI {
   }
 
   close(resetCamera = true) {
-    this.$overlay.style.display = 'none'; // Ensure it's hidden immediately
-    this.$overlay.classList.add('hidden');
-    
+    if (!this.$overlay) {
+      this.$overlay = document.getElementById('immersive-star-overlay');
+    }
+    if (this.$overlay) {
+      this.$overlay.classList.remove('open'); // Hide via CSS class
+      this.$overlay.classList.add('hidden');  // Extra safety
+    }
+
+    // Hide mobile pull tab, sheet, and zoom controls on close
+    const pullTab2  = document.getElementById('mob-pull-tab');
+    const sheet2    = document.getElementById('mobile-details-sheet');
+    const zoomCtrls = document.getElementById('mob-zoom-controls');
+    if (pullTab2)  pullTab2.classList.add('hidden');
+    if (sheet2)    sheet2.classList.remove('expanded');
+    if (zoomCtrls) zoomCtrls.style.display = 'none';
+
     // Cache the star if we need it for an action before nulling
     const prevStar = this.activeStar;
     this.activeStar = null;
-    
+
     this.isRotating = false;
     this.app.renderer.controls.autoRotate = false;
 
@@ -157,7 +241,6 @@ export class ImmersiveStarUI {
     document.body.classList.remove('is-immersive-view');
 
     if (resetCamera) {
-      // Reset camera to galaxy view
       this.app.renderer.resetView();
     }
   }
@@ -200,5 +283,101 @@ export class ImmersiveStarUI {
       story,
       fact
     };
+  }
+
+  // ── Mobile bottom-sheet button wiring (runs once) ───────────
+  _wireMobileButtons() {
+    if (this._mobileButtonsBound) return;
+    this._mobileButtonsBound = true;
+
+    // Helper: fire callback on tap (click OR touchend, not both)
+    const tap = (el, fn) => {
+      if (!el) return;
+      let didTouch = false;
+      el.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        didTouch = true;
+        fn(e);
+        setTimeout(() => { didTouch = false; }, 400);
+      }, { passive: false });
+      el.addEventListener('click', (e) => {
+        if (!didTouch) fn(e);
+      });
+    };
+
+    const sheet   = document.getElementById('mobile-details-sheet');
+    const pullTab = document.getElementById('mob-pull-tab');
+    const handle  = document.getElementById('mobile-sheet-toggle');
+
+    // "View All Details" button → open sheet, hide button
+    tap(pullTab, () => {
+      if (sheet)   sheet.classList.add('expanded');
+      if (pullTab) pullTab.classList.add('hidden');
+    });
+
+    // Handle bar → close sheet, show button again
+    tap(handle, () => {
+      if (sheet)   sheet.classList.remove('expanded');
+      if (pullTab) pullTab.classList.remove('hidden');
+    });
+
+    // ── Zoom In (+) ──
+    const zoomIn  = document.getElementById('mob-zoom-in');
+    const zoomOut = document.getElementById('mob-zoom-out');
+
+    // Single tap zoom
+    tap(zoomIn,  () => this.app.renderer.zoomTowardsSelected(true));
+    tap(zoomOut, () => this.app.renderer.zoomTowardsSelected(false));
+
+    // Long-press continuous zoom
+    const startContinuousZoom = (el, isIn) => {
+      let interval = null;
+      const stop = () => { clearInterval(interval); interval = null; };
+      el.addEventListener('touchstart', () => {
+        interval = setInterval(() => this.app.renderer.zoomTowardsSelected(isIn), 80);
+      }, { passive: true });
+      el.addEventListener('touchend',    stop, { passive: true });
+      el.addEventListener('touchcancel', stop, { passive: true });
+    };
+    if (zoomIn)  startContinuousZoom(zoomIn,  true);
+    if (zoomOut) startContinuousZoom(zoomOut, false);
+
+    // Auto Rotate
+    tap(document.getElementById('mob-btn-rotate'), () => {
+      this.isRotating = !this.isRotating;
+      this.app.renderer.controls.autoRotate = this.isRotating;
+      const btn = document.getElementById('mob-btn-rotate');
+      if (btn) btn.style.color = this.isRotating ? '#38bdf8' : '';
+    });
+
+    // Reset View
+    tap(document.getElementById('mob-btn-reset'), () => {
+      if (this.activeStar) this.app.renderer.viewStar3D(this.activeStar);
+    });
+
+    // Explode Star
+    tap(document.getElementById('mob-btn-explode'), () => {
+      if (this.activeStar) {
+        const target = this.activeStar;
+        this.close(false);
+        this.app.renderer.triggerSupernova(target);
+      }
+    });
+
+    // Fly To Star
+    tap(document.getElementById('mob-btn-fly'), () => {
+      if (this.activeStar) {
+        const target = this.activeStar;
+        this.close(false);
+        if (!this.journeySim) {
+          import('./JourneySimulator.js').then(mod => {
+            this.journeySim = new mod.JourneySimulator(this.app.renderer, 'journey-ui-layer');
+            this.journeySim.startJourney(target);
+          });
+        } else {
+          this.journeySim.startJourney(target);
+        }
+      }
+    });
   }
 }

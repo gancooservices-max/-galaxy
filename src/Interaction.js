@@ -59,11 +59,11 @@ export class Interaction {
     this.mouse.set(x, y);
 
     const hit = this._raycast();
-    const hitId = hit ? (hit.type === 'planet' ? hit.data.id : hit.index) : -1;
+    const hitId = hit ? (hit.type === 'planet' || hit.type === 'satellite' ? hit.data.id : (hit.type === 'userItem' ? 'item_' + hit.data.type + hit.data.index : hit.index)) : -1;
     
     if (hit !== null && hitId !== this.hoveredIdx) {
       this.hoveredIdx = hitId;
-      const objData = hit.type === 'planet' ? hit.data : this.stars[hit.index];
+      const objData = (hit.type === 'planet' || hit.type === 'satellite' || hit.type === 'userItem') ? hit.data : this.stars[hit.index];
       if (this.onHover) this.onHover(objData, clientX, clientY);
     } else if (hit === null && this.hoveredIdx !== -1) {
       this.hoveredIdx = -1;
@@ -78,7 +78,7 @@ export class Interaction {
 
     const hit = this._raycast();
     if (hit !== null && this.onClick) {
-      const objData = (hit.type === 'planet' || hit.type === 'satellite') ? hit.data : this.stars[hit.index];
+      const objData = (hit.type === 'planet' || hit.type === 'satellite' || hit.type === 'userItem') ? hit.data : this.stars[hit.index];
       this.onClick(objData);
     }
   }
@@ -90,7 +90,7 @@ export class Interaction {
 
     const hit = this._raycast();
     if (hit !== null && this.onDblClick) {
-      const objData = (hit.type === 'planet' || hit.type === 'satellite') ? hit.data : this.stars[hit.index];
+      const objData = (hit.type === 'planet' || hit.type === 'satellite' || hit.type === 'userItem') ? hit.data : this.stars[hit.index];
       this.onDblClick(objData);
     }
   }
@@ -107,7 +107,7 @@ export class Interaction {
 
     const hit = this._raycast();
     if (hit !== null && this.onClick) {
-      const objData = (hit.type === 'planet' || hit.type === 'satellite') ? hit.data : this.stars[hit.index];
+      const objData = (hit.type === 'planet' || hit.type === 'satellite' || hit.type === 'userItem') ? hit.data : this.stars[hit.index];
       this.onClick(objData);
     }
   }
@@ -142,6 +142,27 @@ export class Interaction {
             }
             if (hitObj && hitObj.userData.satData) {
                 return { type: 'satellite', data: hitObj.userData.satData };
+            }
+        }
+    }
+
+    // Check user items (capsules, wishes)
+    if (this.starRenderer && this.starRenderer._activeUserItemsGroup) {
+        const itemHits = this.raycaster.intersectObject(this.starRenderer._activeUserItemsGroup, true);
+        if (itemHits.length > 0) {
+            let hitObj = itemHits[0].object;
+            if (hitObj.userData && hitObj.userData.isUserItem) {
+                return { type: 'userItem', data: hitObj.userData };
+            }
+        }
+    }
+    
+    if (this.starRenderer && this.starRenderer._publicUserItemsGroup) {
+        const itemHits = this.raycaster.intersectObject(this.starRenderer._publicUserItemsGroup, true);
+        if (itemHits.length > 0) {
+            let hitObj = itemHits[0].object;
+            if (hitObj.userData && hitObj.userData.isUserItem) {
+                return { type: 'userItem', data: hitObj.userData };
             }
         }
     }

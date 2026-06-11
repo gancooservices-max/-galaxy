@@ -96,13 +96,13 @@ export class JourneySimulator {
 
   hideUI() {
     const cockpit = document.getElementById('j-cockpit');
-    if (cockpit) cockpit.style.opacity = '0';
-    setTimeout(() => {
-      if (this.$uiLayer) {
-        this.$uiLayer.innerHTML = '';
-        this.$uiLayer.classList.add('journey-hidden');
-      }
-    }, 2000);
+    if (cockpit) {
+      cockpit.style.opacity = '0';
+      cockpit.style.transition = 'opacity 2s';
+      setTimeout(() => {
+        if (cockpit.parentNode) cockpit.parentNode.removeChild(cockpit);
+      }, 2000);
+    }
   }
 
   async startJourney(targetStar) {
@@ -622,29 +622,70 @@ export class JourneySimulator {
 
   async sceneArrivalCeremony() {
     // SCENE 8: ARRIVAL CEREMONY
-    const dynUI = document.getElementById('j-dynamic-ui');
-    if (dynUI) {
-      dynUI.innerHTML += `
-        <div style="position:absolute; top:30%; width:100%; text-align:center; animation: j-fadeIn 2s forwards;">
-          <div style="font-size:20px; font-style:italic; color:#e2e8f0; text-shadow:0 0 15px white;">
-            "After crossing unimaginable distances, you have arrived."<br><br>
-            "This star is now part of your story."<br><br>
-            "Welcome home, Explorer."
-          </div>
-          <div class="arrival-actions">
-            <button class="arrival-btn primary" onclick="document.getElementById('j-dynamic-ui').innerHTML='';">Explore Star</button>
-            <button class="arrival-btn">Compare With Earth</button>
-            <button class="arrival-btn">Create Time Capsule</button>
-            <button class="arrival-btn">Dedicate Message</button>
-            <button class="arrival-btn">Continue Journey</button>
-          </div>
+    // Create a fresh arrival container directly inside the UI layer
+    const arrivalDiv = document.createElement('div');
+    arrivalDiv.id = 'journey-arrival-container';
+    arrivalDiv.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:10001;pointer-events:auto;';
+    arrivalDiv.innerHTML = `
+      <div style="text-align:center; animation: j-fadeIn 2s forwards;">
+        <div style="font-size:20px; font-style:italic; color:#e2e8f0; text-shadow:0 0 15px white; line-height:2; margin-bottom:40px;">
+          "After crossing unimaginable distances, you have arrived."<br>
+          "This star is now part of your story."<br>
+          "Welcome home, Explorer."
         </div>
-      `;
+        <button id="btn-exit-journey" style="
+          background: rgba(14,165,233,0.25);
+          border: 2px solid #0ea5e9;
+          color: #38bdf8;
+          padding: 16px 48px;
+          border-radius: 40px;
+          font-size: 16px;
+          font-weight: 600;
+          font-family: Inter, sans-serif;
+          cursor: pointer;
+          pointer-events: auto;
+          letter-spacing: 2px;
+          box-shadow: 0 0 30px rgba(14,165,233,0.4);
+          transition: all 0.3s ease;
+        ">🚀 EXIT JOURNEY</button>
+      </div>
+    `;
+
+    if (this.$uiLayer) {
+      this.$uiLayer.appendChild(arrivalDiv);
+      this.$uiLayer.classList.remove('journey-hidden');
+      this.$uiLayer.style.display = '';
     }
 
-    await this.sleep(2000);
+    // Attach click listener to Exit button
+    const btn = document.getElementById('btn-exit-journey');
+    if (btn) {
+      btn.addEventListener('click', () => {
+        // Remove the arrival overlay
+        if (arrivalDiv.parentNode) arrivalDiv.parentNode.removeChild(arrivalDiv);
 
-    // Give control to the user to interact with the buttons
-    // The cinematic sequence finishes here.
+        // Clear and hide the whole journey layer
+        if (this.$uiLayer) {
+          this.$uiLayer.innerHTML = '';
+          this.$uiLayer.classList.add('journey-hidden');
+          this.$uiLayer.style.display = 'none';
+        }
+
+        // Restore all UI elements hidden during startJourney
+        const elsToRestore = ['app-header', 'bottom-controls', 'btn-toggle-features', 'corner-menubar', 'time-controller', 'side-panel', 'immersive-ui-container'];
+        elsToRestore.forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.style.display = '';
+        });
+        document.body.classList.remove('is-immersive-view');
+
+        // Open the immersive star feature menu
+        if (this.renderer && this.renderer.app && this.renderer.app.ui) {
+          this.renderer.app.ui.openImmersiveUI(this.targetStar);
+        }
+
+        this.active = false;
+      });
+    }
   }
 }

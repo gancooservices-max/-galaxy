@@ -4,6 +4,7 @@ import PlanetComparison from './modules/PlanetComparison';
 import StarComparison from './modules/StarComparison';
 import DistanceScale from './modules/DistanceScale';
 import UniverseScale from './modules/UniverseScale';
+import CapsuleTerminal from './modules/CapsuleTerminal';
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform, useMotionTemplate } from 'framer-motion';
 import { Star, Shield, Lock, Unlock, Calendar, MapPin, Award, ArrowLeft, Send, Compass, Crosshair, Radio, Circle, X, Maximize, Orbit, ZoomIn, ZoomOut, Box, Globe2, Trash2 } from 'lucide-react';
 
@@ -306,32 +307,22 @@ export default function MyStarPortal({ onBack }) {
         {/* Item View Popup */}
         <AnimatePresence>
           {clickedItem && (
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[300] bg-[#050B14]/90 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-2xl max-w-md w-full pointer-events-auto"
-            >
-              <button onClick={() => setClickedItem(null)} className="absolute top-4 right-4 text-gray-400 hover:text-white">
-                <X className="w-5 h-5" />
-              </button>
-              
-              {clickedItem.type === 'capsule' ? (
-                <div>
-                  <h3 className="text-2xl font-bold text-aurora-cyan flex items-center gap-2 mb-4">
-                    <Calendar className="w-6 h-6" /> Time Capsule
-                  </h3>
-                  <div className="text-sm text-gray-400 mb-4 pb-4 border-b border-white/10">Opens: {new Date(clickedItem.data.open_on_date).toLocaleDateString()}</div>
-                  {clickedItem.data.isLocked ? (
-                    <p className="text-gray-500 italic flex items-center gap-2"><Lock className="w-4 h-4"/> Message is sealed until open date.</p>
-                  ) : (
-                    <p className="text-white whitespace-pre-wrap">{clickedItem.data.message}</p>
-                  )}
-                </div>
-              ) : (
+            clickedItem.type === 'capsule' ? (
+              <CapsuleTerminal item={clickedItem} onClose={() => setClickedItem(null)} />
+            ) : (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[300] bg-[#050B14]/90 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-2xl max-w-md w-full pointer-events-auto"
+              >
+                <button onClick={() => setClickedItem(null)} className="absolute top-4 right-4 text-gray-400 hover:text-white">
+                  <X className="w-5 h-5" />
+                </button>
+                
                 <div>
                   <h3 className="text-2xl font-bold text-nebula-pink flex items-center gap-2 mb-4">
-                    <Star className="w-6 h-6" /> Secret Wish
+                    <Star className="w-6 h-6" /> Secret Wish {clickedItem.index} of {clickedItem.total}
                   </h3>
                   <div className="text-sm text-gray-400 mb-4 pb-4 border-b border-white/10">Made on: {new Date(clickedItem.data.created_at).toLocaleDateString()}</div>
                   {clickedItem.data.unlocked ? (
@@ -340,8 +331,8 @@ export default function MyStarPortal({ onBack }) {
                     <p className="text-gray-500 italic flex items-center gap-2"><Lock className="w-4 h-4"/> This wish is locked. Unlock it in the dashboard to view it here.</p>
                   )}
                 </div>
-              )}
-            </motion.div>
+              </motion.div>
+            )
           )}
         </AnimatePresence>
 
@@ -660,17 +651,45 @@ export default function MyStarPortal({ onBack }) {
                 
                 <div className="space-y-4 mb-8">
                   {capsules.length === 0 && <p className="text-gray-500 italic">No time capsules sealed yet.</p>}
-                  {capsules.map(cap => (
-                    <div key={cap.id} className="p-4 rounded-xl bg-black/40 border border-white/10">
-                      <div className="flex justify-between items-start mb-2">
-                        <span className="text-sm text-gray-400">Opens: {new Date(cap.open_on_date).toLocaleDateString()}</span>
-                        {cap.isLocked ? <Lock className="w-4 h-4 text-red-400" /> : <Unlock className="w-4 h-4 text-green-400" />}
+                  {capsules.map((cap, index) => (
+                    <div key={cap.id} className="relative overflow-hidden p-3 rounded-xl bg-[#0a1220] border border-aurora-cyan/30 shadow-[0_0_10px_rgba(0,255,204,0.05)] group transition-all hover:border-aurora-cyan/60 hover:shadow-[0_0_15px_rgba(0,255,204,0.15)]">
+                      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-aurora-cyan/5 to-transparent h-[200%] w-full opacity-0 group-hover:opacity-100 group-hover:animate-scan transition-opacity" />
+                      
+                      <div className="relative flex justify-between items-start mb-2 pb-2 border-b border-aurora-cyan/10">
+                        <div>
+                          <h5 className="text-[9px] text-aurora-cyan/60 font-mono tracking-widest uppercase mb-0.5">Payload Designation</h5>
+                          <div className="text-sm text-white font-bold tracking-wider">Capsule {index + 1}</div>
+                        </div>
+                        <div className="flex flex-col items-end">
+                          <span className="text-[9px] text-aurora-cyan/60 font-mono tracking-widest uppercase mb-0.5">Decryption Date</span>
+                          <span className="text-xs font-mono text-white/90 bg-black/40 px-1.5 py-0.5 rounded border border-white/10">
+                            {new Date(cap.open_on_date).toLocaleDateString()}
+                          </span>
+                        </div>
                       </div>
-                      {cap.isLocked ? (
-                        <p className="text-gray-500 font-mono text-sm blur-sm select-none">Message is currently locked and cannot be viewed until the specified date.</p>
-                      ) : (
-                        <p className="text-white whitespace-pre-wrap">{cap.message}</p>
-                      )}
+
+                      <div className="relative flex gap-3 items-start">
+                        <div className={`shrink-0 p-1.5 rounded-lg border ${cap.isLocked ? 'bg-red-500/10 border-red-500/20' : 'bg-aurora-cyan/10 border-aurora-cyan/20'}`}>
+                          {cap.isLocked ? <Lock className="w-3.5 h-3.5 text-red-400" /> : <Unlock className="w-3.5 h-3.5 text-aurora-cyan" />}
+                        </div>
+                        <div className="flex-1">
+                          {cap.isLocked ? (
+                            <div>
+                              <h5 className="text-[10px] text-red-400 font-bold font-mono tracking-wider mb-0.5">ENCRYPTION ACTIVE</h5>
+                              <p className="text-[10px] text-gray-500 font-mono leading-tight opacity-80 blur-[2px] select-none">
+                                Data fragment is temporally sealed. Access is strictly forbidden until the stardate aligns with the decryption key.
+                              </p>
+                            </div>
+                          ) : (
+                            <div>
+                              <h5 className="text-[10px] text-aurora-cyan font-bold font-mono tracking-wider mb-0.5">DECRYPTED PAYLOAD</h5>
+                              <p className="text-xs text-white/90 whitespace-pre-wrap leading-tight custom-scrollbar max-h-24 overflow-y-auto">
+                                {cap.message}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>

@@ -432,6 +432,9 @@ function requireAdmin(req, res, next) {
 app.get('/api/stars', async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT star_id, owner_name, message, star_name, unique_id, registration_date FROM registered_stars');
+    const [capsules] = await pool.query('SELECT id, star_id, open_on_date, created_at FROM time_capsules ORDER BY open_on_date ASC');
+    const [wishes] = await pool.query('SELECT id, star_id, created_at FROM star_wishes ORDER BY created_at DESC');
+
     const starMap = {};
     rows.forEach(row => {
       starMap[row.star_id] = {
@@ -439,7 +442,17 @@ app.get('/api/stars', async (req, res) => {
         message: row.message,
         starName: row.star_name,
         uniqueId: row.unique_id,
-        date: row.registration_date
+        date: row.registration_date,
+        capsules: capsules.filter(c => c.star_id === row.star_id).map(c => ({
+          id: c.id,
+          open_on_date: c.open_on_date,
+          created_at: c.created_at,
+          isLocked: new Date(c.open_on_date) > new Date()
+        })),
+        wishes: wishes.filter(w => w.star_id === row.star_id).map(w => ({
+          id: w.id,
+          created_at: w.created_at
+        }))
       };
     });
     res.json(starMap);
@@ -1275,6 +1288,31 @@ app.delete('/api/admin/registrations/:id', requireAdmin, async (req, res) => {
   }
 });
 
+// Admin: Edit a time capsule date
+app.put('/api/admin/capsules/:id', requireAdmin, async (req, res) => {
+  try {
+    const { open_on_date } = req.body;
+    if (!open_on_date) return res.status(400).json({ error: 'Date is required' });
+    
+    await pool.query('UPDATE time_capsules SET open_on_date = ? WHERE id = ?', [open_on_date, req.params.id]);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error updating capsule:', error);
+    res.status(500).json({ error: 'Failed to update capsule date' });
+  }
+});
+
+// Admin: Delete a time capsule
+app.delete('/api/admin/capsules/:id', requireAdmin, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM time_capsules WHERE id = ?', [req.params.id]);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting capsule:', error);
+    res.status(500).json({ error: 'Failed to delete capsule' });
+  }
+});
+
 // Admin: Get all custom stars
 app.get('/api/admin/custom-stars', requireAdmin, async (req, res) => {
   try {
@@ -1299,6 +1337,23 @@ app.post('/api/admin/custom-stars', requireAdmin, async (req, res) => {
     res.json({ success: true, id: result.insertId });
   } catch (error) {
     res.status(500).json({ error: 'Error creating custom star' });
+  }
+});
+
+// Admin: Update custom star
+app.put('/api/admin/custom-stars/:id', requireAdmin, async (req, res) => {
+  const { name, ra, dec_coord, distance, magnitude, color, spectral_type } = req.body;
+  if (!name || ra === undefined || dec_coord === undefined) {
+    return res.status(400).json({ error: 'Name, RA, and Dec are required.' });
+  }
+  try {
+    await pool.query(
+      'UPDATE custom_stars SET name=?, ra=?, dec_coord=?, distance=?, magnitude=?, color=?, spectral_type=? WHERE id=?',
+      [name, ra, dec_coord, distance || 100, magnitude || 5.0, color || '#ffffff', spectral_type || 'G', req.params.id]
+    );
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Error updating custom star' });
   }
 });
 

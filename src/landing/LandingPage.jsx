@@ -7,6 +7,7 @@ import {
   Menu, X
 } from 'lucide-react';
 import MyStarPortal from './MyStarPortal';
+import CapsuleTerminal from './modules/CapsuleTerminal';
 
 const FadeIn = ({ children, delay = 0, className = "" }) => (
   <motion.div
@@ -312,9 +313,18 @@ export default function LandingPage({ onExplore }) {
   const [moments, setMoments] = useState([]);
   const [currentView, setCurrentView] = useState('landing');
   const [mystarSource, setMystarSource] = useState('landing');
+  const [publicItem, setPublicItem] = useState(null);
 
   useEffect(() => {
     fetch('/api/moments').then(r => r.json()).then(setMoments).catch(console.error);
+
+    const handleItemClick = (e) => {
+      // Only show public terminal if we are not in mystar view
+      if (currentView !== 'mystar') {
+        setPublicItem(e.detail);
+      }
+    };
+    window.addEventListener('mystar-item-click', handleItemClick);
 
     const handleOpenMyStar = (e) => {
       setMystarSource(e.detail?.source || 'landing');
@@ -351,7 +361,7 @@ export default function LandingPage({ onExplore }) {
         rootEl.style.minHeight = '';
       }
     };
-  }, []);
+  }, [currentView]);
 
   const y = useTransform(scrollYProgress, [0, 1], ['0%', '30%']);
 
@@ -372,6 +382,23 @@ export default function LandingPage({ onExplore }) {
 
   if (currentView === 'mystar') {
     return <MyStarPortal onBack={handleBackFromMyStar} />;
+  }
+
+  // If viewing the public galaxy and an item is clicked, show it!
+  if (publicItem) {
+    return (
+      <div className="fixed inset-0 z-[9999] pointer-events-auto">
+        <CapsuleTerminal item={publicItem} onClose={() => {
+          setPublicItem(null);
+          const rootEl = document.getElementById('react-root');
+          if (rootEl) {
+            rootEl.style.opacity = '0';
+            rootEl.style.pointerEvents = 'none';
+            setTimeout(() => { rootEl.style.display = 'none'; }, 300);
+          }
+        }} />
+      </div>
+    );
   }
 
   return (

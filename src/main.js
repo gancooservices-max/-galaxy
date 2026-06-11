@@ -63,6 +63,7 @@ async function main() {
   ui.renderer = renderer;
   if (ui.registeredStars) {
     renderer.highlightRegisteredStars(ui.registeredStars);
+    renderer.renderPublicUserItems(ui.registeredStars);
   }
 
   // ─── 4.5. Mount Landing Page ────────
@@ -206,6 +207,9 @@ async function main() {
       } else {
         // Switch to Photorealistic 3D Star mode
         renderer.viewStar3D(starData);
+        if (typeof renderer.renderUserItems === 'function') {
+          renderer.renderUserItems(starData, window.currentTrackedCapsules || [], window.currentTrackedWishes || []);
+        }
       }
     }
   });
@@ -238,6 +242,9 @@ async function main() {
     const capsules = e.detail?.capsules || [];
     const wishes = e.detail?.wishes || [];
     
+    window.currentTrackedCapsules = capsules;
+    window.currentTrackedWishes = wishes;
+    
     const starData = renderer.stars.find(s => String(s.id) === String(starId) || String(s.id) === `CUST-${starId}`);
     
     if (starData) {
@@ -258,6 +265,10 @@ async function main() {
     const starDataRaw = e.detail?.starData;
     const capsules = e.detail?.capsules || [];
     const wishes = e.detail?.wishes || [];
+    
+    window.currentTrackedCapsules = capsules;
+    window.currentTrackedWishes = wishes;
+
     if (!starDataRaw || !renderer) return;
 
     const starId = starDataRaw.star_id || starDataRaw.unique_id;
@@ -329,6 +340,11 @@ async function main() {
     }
 
     if (star) {
+      if (star.isUserItem) {
+        ui.hideTooltip();
+        renderer.renderer.domElement.style.cursor = 'pointer';
+        return;
+      }
       updatePlanetRealtimeDistance(star);
       ui.showTooltip(star, x, y);
       renderer.renderer.domElement.style.cursor = 'pointer';
@@ -342,6 +358,18 @@ async function main() {
   interaction.onClick = (star) => {
     if (renderer.missionSimulator && renderer.missionSimulator.active) return;
     if (window.isMyStarTracking) return;
+
+    if (star && star.isUserItem) {
+      // Fire custom event to open the React HUD!
+      const rootEl = document.getElementById('react-root');
+      if (rootEl) {
+        rootEl.style.display = 'block';
+        rootEl.style.opacity = '1';
+        rootEl.style.pointerEvents = 'auto';
+      }
+      window.dispatchEvent(new CustomEvent('mystar-item-click', { detail: star }));
+      return;
+    }
 
     updatePlanetRealtimeDistance(star);
     renderer.selectStar(star);
@@ -454,6 +482,13 @@ async function main() {
   // View 3D Star button in panel
   ui.onViewStar = (star) => {
     renderer.viewStar3D(star);
+    
+    if (String(star.id) === String(window.currentTrackedStarId) || `CUST-${star.id}` === String(window.currentTrackedStarId)) {
+      if (typeof renderer.renderUserItems === 'function') {
+        renderer.renderUserItems(star, window.currentTrackedCapsules || [], window.currentTrackedWishes || []);
+      }
+    }
+    
     renderer.setAutoRotate(false);
     ui.$btnAutoRot.classList.remove('active');
 

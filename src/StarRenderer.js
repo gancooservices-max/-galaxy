@@ -4676,60 +4676,275 @@ CSS (TIANGONG)
     this._activeUserItemsGroup.position.copy(this._active3DStar.position);
     this.scene.add(this._activeUserItemsGroup);
 
-    // 1. Draw Capsules (Golden octahedrons)
+    // 1. Draw Capsules (Sci-Fi Metallic Cylinder with glowing neon rings)
     capsules.forEach((cap, idx) => {
-      const geo = new THREE.OctahedronGeometry(0.15, 0); // ~0.15 units size
+      const capsuleGroup = new THREE.Group();
+      
+      const geo = new THREE.CylinderGeometry(0.06, 0.06, 0.25, 16);
       const mat = new THREE.MeshStandardMaterial({
-        color: 0xffd700,
-        metalness: 0.8,
-        roughness: 0.2,
-        emissive: 0xaa8800,
-        emissiveIntensity: 0.2
+        color: 0x445566,
+        metalness: 0.9,
+        roughness: 0.3,
       });
       const mesh = new THREE.Mesh(geo, mat);
       
-      // Orbit params
-      const radius = 2.8 + (idx * 0.4);
-      const angle = (idx / Math.max(capsules.length, 1)) * Math.PI * 2;
+      const capGeo = new THREE.SphereGeometry(0.06, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+      const topCap = new THREE.Mesh(capGeo, mat);
+      topCap.position.y = 0.125;
+      const bottomCap = new THREE.Mesh(capGeo, mat);
+      bottomCap.position.y = -0.125;
+      bottomCap.rotation.x = Math.PI;
       
-      mesh.position.set(Math.cos(angle) * radius, (Math.random() - 0.5) * 0.5, Math.sin(angle) * radius);
-      mesh.userData = { type: 'capsule', data: cap, isUserItem: true };
+      const ringGeo = new THREE.TorusGeometry(0.075, 0.015, 8, 24);
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: 0x00ffcc,
+        transparent: true,
+        opacity: 0.9,
+      });
       
-      this._activeUserItemsGroup.add(mesh);
-    });
+      const ring1 = new THREE.Mesh(ringGeo, ringMat);
+      ring1.position.y = 0.06;
+      ring1.rotation.x = Math.PI / 2;
+      
+      const ring2 = new THREE.Mesh(ringGeo, ringMat);
+      ring2.position.y = -0.06;
+      ring2.rotation.x = Math.PI / 2;
 
-    // 2. Draw Wishes (Glowing pink/purple wisps)
-    wishes.forEach((wish, idx) => {
-      // Create a glowing sprite
-      const canvas = document.createElement('canvas');
-      canvas.width = 64; canvas.height = 64;
-      const ctx = canvas.getContext('2d');
+      const glowCanvas = document.createElement('canvas');
+      glowCanvas.width = 64; glowCanvas.height = 64;
+      const ctx = glowCanvas.getContext('2d');
       const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
-      grad.addColorStop(0, 'rgba(255, 105, 180, 1)');
-      grad.addColorStop(0.2, 'rgba(255, 20, 147, 0.8)');
+      grad.addColorStop(0, 'rgba(0, 255, 204, 0.6)');
       grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, 64, 64);
-      
-      const tex = new THREE.CanvasTexture(canvas);
-      const mat = new THREE.SpriteMaterial({
-        map: tex,
-        color: 0xffffff,
-        transparent: true,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false
+      const glowTex = new THREE.CanvasTexture(glowCanvas);
+      const glowMat = new THREE.SpriteMaterial({
+        map: glowTex, color: 0xffffff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false
       });
-      const sprite = new THREE.Sprite(mat);
-      sprite.scale.set(0.4, 0.4, 1);
+      const glowSprite = new THREE.Sprite(glowMat);
+      glowSprite.scale.set(0.6, 0.6, 1);
       
-      // Orbit params
+      capsuleGroup.add(mesh, topCap, bottomCap, ring1, ring2, glowSprite);
+      
+      const radius = 2.8 + (idx * 0.4);
+      const angle = (idx / Math.max(capsules.length, 1)) * Math.PI * 2;
+      
+      capsuleGroup.position.set(Math.cos(angle) * radius, (Math.random() - 0.5) * 0.5, Math.sin(angle) * radius);
+      capsuleGroup.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+      
+      capsuleGroup.userData = { type: 'capsule', data: cap, isUserItem: true, index: idx + 1, total: capsules.length };
+      capsuleGroup.children.forEach(c => c.userData = capsuleGroup.userData);
+      
+      this._activeUserItemsGroup.add(capsuleGroup);
+    });
+
+    // 2. Draw Wishes (Ethereal Swirling Stardust cluster)
+    wishes.forEach((wish, idx) => {
+      const wishGroup = new THREE.Group();
+
+      const centerCanvas = document.createElement('canvas');
+      centerCanvas.width = 128; centerCanvas.height = 128;
+      const cCtx = centerCanvas.getContext('2d');
+      const cGrad = cCtx.createRadialGradient(64, 64, 0, 64, 64, 64);
+      cGrad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+      cGrad.addColorStop(0.1, 'rgba(255, 230, 150, 0.9)');
+      cGrad.addColorStop(0.4, 'rgba(255, 150, 50, 0.4)');
+      cGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      cCtx.fillStyle = cGrad;
+      cCtx.fillRect(0, 0, 128, 128);
+      
+      const centerTex = new THREE.CanvasTexture(centerCanvas);
+      const centerMat = new THREE.SpriteMaterial({
+        map: centerTex, color: 0xffffff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false
+      });
+      const centerSprite = new THREE.Sprite(centerMat);
+      centerSprite.scale.set(0.6, 0.6, 1);
+      wishGroup.add(centerSprite);
+
+      const pCount = 200;
+      const pGeo = new THREE.BufferGeometry();
+      const pPos = new Float32Array(pCount * 3);
+      const pColor = new Float32Array(pCount * 3);
+      const color1 = new THREE.Color(0xffaa00);
+      const color2 = new THREE.Color(0xff44ff);
+
+      for(let i = 0; i < pCount; i++) {
+        const u = Math.random();
+        const v = Math.random();
+        const theta = 2 * Math.PI * u;
+        const phi = Math.acos(2 * v - 1);
+        const r = 0.3 * Math.cbrt(Math.random());
+
+        pPos[i*3] = r * Math.sin(phi) * Math.cos(theta);
+        pPos[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+        pPos[i*3+2] = r * Math.cos(phi);
+
+        const mixRatio = Math.random();
+        const c = color1.clone().lerp(color2, mixRatio);
+        pColor[i*3] = c.r;
+        pColor[i*3+1] = c.g;
+        pColor[i*3+2] = c.b;
+      }
+      pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+      pGeo.setAttribute('color', new THREE.BufferAttribute(pColor, 3));
+
+      const pMat = new THREE.PointsMaterial({
+        size: 0.03,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.9,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        sizeAttenuation: true
+      });
+
+      const stardust = new THREE.Points(pGeo, pMat);
+      wishGroup.add(stardust);
+
       const radius = 4.2 + (idx * 0.4);
       const angle = (idx / Math.max(wishes.length, 1)) * Math.PI * 2 + Math.PI;
       
-      sprite.position.set(Math.cos(angle) * radius, (Math.random() - 0.5) * 1.0, Math.sin(angle) * radius);
-      sprite.userData = { type: 'wish', data: wish, isUserItem: true };
+      wishGroup.position.set(Math.cos(angle) * radius, (Math.random() - 0.5) * 1.0, Math.sin(angle) * radius);
       
-      this._activeUserItemsGroup.add(sprite);
+      wishGroup.userData = { type: 'wish', data: wish, isUserItem: true, index: idx + 1, total: wishes.length };
+      wishGroup.children.forEach(c => c.userData = wishGroup.userData);
+      
+      this._activeUserItemsGroup.add(wishGroup);
+    });
+  }
+
+  renderPublicUserItems(registeredStarsMap) {
+    if (this._publicUserItemsGroup) {
+      this.skyGroup.remove(this._publicUserItemsGroup);
+    }
+    this._publicUserItemsGroup = new THREE.Group();
+    // Add to skyGroup so it rotates correctly with the stars!
+    if (this.skyGroup) {
+      this.skyGroup.add(this._publicUserItemsGroup);
+    } else {
+      this.scene.add(this._publicUserItemsGroup);
+    }
+
+    if (!this.stars) return;
+
+    Object.entries(registeredStarsMap).forEach(([starId, regData]) => {
+      const starData = this.stars.find(s => String(s.id) === String(starId) || String(s.id) === `CUST-${starId}`);
+      if (!starData || !starData.position) return;
+
+      const basePos = starData.position;
+
+      // Draw Capsules globally
+      if (regData.capsules && regData.capsules.length > 0) {
+        regData.capsules.forEach((cap, idx) => {
+          const capsuleGroup = new THREE.Group();
+          
+          const geo = new THREE.CylinderGeometry(0.06, 0.06, 0.25, 16);
+          const mat = new THREE.MeshStandardMaterial({
+            color: 0x445566,
+            metalness: 0.9,
+            roughness: 0.3,
+          });
+          const mesh = new THREE.Mesh(geo, mat);
+          
+          const capGeo = new THREE.SphereGeometry(0.06, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+          const topCap = new THREE.Mesh(capGeo, mat);
+          topCap.position.y = 0.125;
+          const bottomCap = new THREE.Mesh(capGeo, mat);
+          bottomCap.position.y = -0.125;
+          bottomCap.rotation.x = Math.PI;
+          
+          const ringGeo = new THREE.TorusGeometry(0.075, 0.015, 8, 24);
+          const ringMat = new THREE.MeshBasicMaterial({
+            color: 0x00ffcc,
+            transparent: true,
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending
+          });
+          const ring1 = new THREE.Mesh(ringGeo, ringMat);
+          ring1.position.y = 0.08;
+          ring1.rotation.x = Math.PI / 2;
+          const ring2 = new THREE.Mesh(ringGeo, ringMat);
+          ring2.position.y = -0.08;
+          ring2.rotation.x = Math.PI / 2;
+
+          const glowGeo = new THREE.SphereGeometry(0.12, 16, 16);
+          const glowMat = new THREE.MeshBasicMaterial({
+            color: 0x00ffcc,
+            transparent: true,
+            opacity: 0.2,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+          });
+          const glowSprite = new THREE.Mesh(glowGeo, glowMat);
+
+          capsuleGroup.add(mesh, topCap, bottomCap, ring1, ring2, glowSprite);
+          
+          const angle = (idx / Math.max(regData.capsules.length, 1)) * Math.PI * 2;
+          
+          capsuleGroup.userData = {
+            basePos: basePos,
+            angle: angle,
+            baseRadius: 0.3,
+            yOffset: 0.1,
+            originalDist: Math.sqrt(basePos.x * basePos.x + basePos.y * basePos.y + basePos.z * basePos.z),
+            type: 'capsule',
+            data: cap,
+            isUserItem: true
+          };
+          
+          capsuleGroup.position.copy(basePos);
+          capsuleGroup.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+          
+          capsuleGroup.children.forEach(c => c.userData = capsuleGroup.userData);
+          
+          this._publicUserItemsGroup.add(capsuleGroup);
+        });
+      }
+
+      // Draw Wishes globally
+      if (regData.wishes && regData.wishes.length > 0) {
+        regData.wishes.forEach((wish, idx) => {
+          const wishGroup = new THREE.Group();
+
+          const octaGeo = new THREE.OctahedronGeometry(0.18, 0);
+          const mat = new THREE.MeshStandardMaterial({
+            color: 0xff00ff,
+            metalness: 0.5,
+            roughness: 0.2,
+            emissive: 0x440044,
+            transparent: true,
+            opacity: 0.9
+          });
+          const mesh = new THREE.Mesh(octaGeo, mat);
+
+          const wireGeo = new THREE.EdgesGeometry(octaGeo);
+          const wireMat = new THREE.LineBasicMaterial({ color: 0xffaaff, linewidth: 2 });
+          const wire = new THREE.LineSegments(wireGeo, wireMat);
+
+          wishGroup.add(mesh, wire);
+
+          const angle = (idx / Math.max(regData.wishes.length, 1)) * Math.PI * 2 + Math.PI / 4;
+          
+          wishGroup.userData = {
+            basePos: basePos,
+            angle: angle,
+            baseRadius: 0.4,
+            yOffset: -0.1,
+            originalDist: Math.sqrt(basePos.x * basePos.x + basePos.y * basePos.y + basePos.z * basePos.z),
+            type: 'wish',
+            data: wish,
+            isUserItem: true
+          };
+
+          wishGroup.position.copy(basePos);
+          wishGroup.rotation.set(Math.random(), Math.random(), Math.random());
+
+          wishGroup.children.forEach(c => c.userData = wishGroup.userData);
+          
+          this._publicUserItemsGroup.add(wishGroup);
+        });
+      }
     });
   }
 
@@ -5629,6 +5844,13 @@ CSS (TIANGONG)
     // Restore Sun mesh and glow visibility when returning to space view
     const sunMeshEntry = this.planetMeshes ? this.planetMeshes.find(pm => pm.data.id === 'Sun') : null;
     if (sunMeshEntry) sunMeshEntry.mesh.visible = true;
+    
+    // Restore all other planets too (in case they were hidden by JourneySimulator)
+    if (this.planetMeshes) {
+      this.planetMeshes.forEach(pm => {
+        if (pm.mesh) pm.mesh.visible = true;
+      });
+    }
     if (this._sunGlow) {
       this._sunGlow.visible = true;
       this._sunGlow.material.opacity = 1.0;
@@ -6371,6 +6593,42 @@ CSS (TIANGONG)
         if (this.constellations) this.constellations.setMapMode(this._mapModeValue);
       }
 
+      if (this._publicUserItemsGroup) {
+        // Camera position is in world space. We need skyGroup's world matrix to get star world pos, but
+        // for approximation, using the local pos is ok if skyGroup is not heavily translated. 
+        // We'll calculate the true distance:
+        const camPos = this.camera.position;
+        const tempVec = new THREE.Vector3();
+        this._publicUserItemsGroup.children.forEach(group => {
+           if (group.userData && group.userData.basePos) {
+              tempVec.copy(group.userData.basePos);
+              if (this.skyGroup) {
+                tempVec.applyMatrix4(this.skyGroup.matrixWorld);
+              }
+              const distToCamera = camPos.distanceTo(tempVec);
+              
+              // Base scale logic: distance / 150 keeps it properly visible from far away (galactic view)
+              // and Math.max(2.0) ensures it is decently sized (1/4 of star) when zoomed in.
+              const scale = Math.max(2.0, distToCamera / 150); 
+              group.scale.set(scale, scale, scale);
+              
+              // The 3D star has a radius of 2.0. We guarantee the item is at least 2.5 units away
+              const r = 2.5 + group.userData.baseRadius * scale;
+              group.position.copy(group.userData.basePos);
+              group.position.x += Math.cos(group.userData.angle) * r;
+              group.position.y += group.userData.yOffset * scale;
+              group.position.z += Math.sin(group.userData.angle) * r;
+              
+              // Simple rotation animation for public items
+              group.rotation.y += 0.005;
+              if (group.children.length > 0 && group.children[0].geometry.type === 'OctahedronGeometry') {
+                 group.rotation.x += 0.003;
+                 group.rotation.z += 0.004;
+              }
+           }
+        });
+      }
+
       // Update live telemetry + Earth zoom map
       if (this._frameCount % 3 === 0) this._updateEarthZoom();
       if (this._frameCount % 10 === 0) this._updateTelemetry();
@@ -6879,15 +7137,47 @@ CSS (TIANGONG)
     this.renderer.domElement.addEventListener('pointerup', (e) => {
       if (isDragging) return; // Ignore if it was a pan drag
       if (this.missionSimulator && this.missionSimulator.active) return; // Block clicks during Chandrayaan mission
-      if (!this.isPlanetariumMode && !this.isFlyMode) return;
-      if (this._active3DStar) return; // Block background star clicks when viewing a star!
 
       this.mouse = this.mouse || new THREE.Vector2();
-      this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-      this.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+      const rect = this.renderer.domElement.getBoundingClientRect();
+      this.mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      this.mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
 
       if (!this.raycaster) this.raycaster = new THREE.Raycaster();
       this.raycaster.setFromCamera(this.mouse, this.camera);
+
+      // Check User Items First!
+      if (this._activeUserItemsGroup) {
+        const itemIntersects = this.raycaster.intersectObject(this._activeUserItemsGroup, true);
+        if (itemIntersects.length > 0) {
+          const hitItem = itemIntersects[0].object;
+          if (hitItem.userData && hitItem.userData.isUserItem) {
+            
+            // Fly the camera to this specific item!
+            let rootGroup = hitItem;
+            while(rootGroup.parent && rootGroup.parent !== this._activeUserItemsGroup) {
+               rootGroup = rootGroup.parent;
+            }
+            
+            if (rootGroup.position && typeof this._transitionCamPos === 'function') {
+               this.controls.autoRotate = false;
+               const worldPos = new THREE.Vector3();
+               rootGroup.getWorldPosition(worldPos);
+               
+               const dir = new THREE.Vector3().subVectors(this.camera.position, worldPos).normalize();
+               if(dir.lengthSq() === 0) dir.set(0,0,1);
+               const targetCamPos = worldPos.clone().add(dir.multiplyScalar(0.5));
+               
+               this._transitionCamPos(targetCamPos, 1500, worldPos);
+            }
+
+            window.dispatchEvent(new CustomEvent('mystar-item-click', { detail: hitItem.userData }));
+            return; // don't open the standard panel
+          }
+        }
+      }
+
+      if (this._active3DStar) return; // Block background star clicks when viewing a star!
 
       // Check Planets First
       let intersects = [];
@@ -6927,17 +7217,7 @@ CSS (TIANGONG)
         this._targetPanGoal = this.camera.position.clone().add(dir.multiplyScalar(currentDist));
       }
 
-      // Check User Items First!
-      if (this._activeUserItemsGroup) {
-        const itemIntersects = this.raycaster.intersectObject(this._activeUserItemsGroup, true);
-        if (itemIntersects.length > 0) {
-          const hitItem = itemIntersects[0].object;
-          if (hitItem.userData && hitItem.userData.isUserItem) {
-            window.dispatchEvent(new CustomEvent('mystar-item-click', { detail: hitItem.userData }));
-            return; // don't open the standard panel
-          }
-        }
-      }
+      // User items are now checked earlier, before the active3DStar blocker
 
       const panel = document.getElementById('celestial-info-panel');
       if (hitObject && panel) {

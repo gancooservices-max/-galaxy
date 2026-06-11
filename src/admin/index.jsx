@@ -106,6 +106,8 @@ function Registrations({ token }) {
   const [selectedReg, setSelectedReg] = useState(null);
   const [capsules, setCapsules] = useState([]);
   const [wishes, setWishes] = useState([]);
+  const [editCapsuleId, setEditCapsuleId] = useState(null);
+  const [editCapsuleDate, setEditCapsuleDate] = useState('');
 
   const fetchRegs = async () => {
     const res = await fetch('/api/admin/registrations', { headers: { 'Authorization': `Bearer ${token}` } });
@@ -135,6 +137,33 @@ function Registrations({ token }) {
     if (!confirm('Are you sure you want to revoke this registration?')) return;
     const res = await fetch(`/api/admin/registrations/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
     if (res.ok) fetchRegs();
+  };
+
+  const handleDeleteCapsule = async (id) => {
+    if (!confirm('Are you sure you want to delete this capsule permanently?')) return;
+    const res = await fetch(`/api/admin/capsules/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+    if (res.ok) {
+      fetch(`/api/mystar/${selectedReg.star_id}/capsules`)
+        .then(res => res.json())
+        .then(data => setCapsules(Array.isArray(data) ? data : []))
+        .catch(() => setCapsules([]));
+    }
+  };
+
+  const handleUpdateCapsuleDate = async (id) => {
+    if (!editCapsuleDate) return;
+    const res = await fetch(`/api/admin/capsules/${id}`, { 
+      method: 'PUT', 
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ open_on_date: editCapsuleDate })
+    });
+    if (res.ok) {
+      setEditCapsuleId(null);
+      fetch(`/api/mystar/${selectedReg.star_id}/capsules`)
+        .then(res => res.json())
+        .then(data => setCapsules(Array.isArray(data) ? data : []))
+        .catch(() => setCapsules([]));
+    }
   };
 
   const handleActivate = async (id) => {
@@ -262,11 +291,47 @@ function Registrations({ token }) {
                     {capsules.map(cap => (
                       <div key={cap.id} className="bg-black/40 p-4 rounded-xl border border-white/10 backdrop-blur-md">
                         <div className="flex justify-between items-center text-sm mb-2">
-                          <span className="text-aurora-cyan">Unlock Date: <span className="text-white font-medium">{new Date(cap.open_on_date).toLocaleDateString()}</span></span>
+                          <span className="text-aurora-cyan">Unlock Date: 
+                            {editCapsuleId === cap.id ? (
+                              <div className="inline-flex items-center gap-2 ml-2">
+                                <input 
+                                  type="date" 
+                                  value={editCapsuleDate}
+                                  onChange={e => setEditCapsuleDate(e.target.value)}
+                                  className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white text-xs outline-none"
+                                />
+                                <button onClick={() => handleUpdateCapsuleDate(cap.id)} className="text-green-400 hover:text-green-300 bg-green-500/20 px-2 py-1 rounded text-xs">Save</button>
+                                <button onClick={() => setEditCapsuleId(null)} className="text-slate-400 hover:text-white bg-slate-700 px-2 py-1 rounded text-xs">Cancel</button>
+                              </div>
+                            ) : (
+                              <span className="text-white font-medium ml-2">{new Date(cap.open_on_date).toLocaleDateString()}</span>
+                            )}
+                          </span>
                           <span className="text-slate-500 text-xs">{new Date(cap.created_at).toLocaleDateString()}</span>
                         </div>
-                        <div className="text-slate-400 italic text-sm flex items-center gap-2 bg-black/50 p-2 rounded-lg">
-                          <span className="text-lg">🔒</span> Message hidden for privacy
+                        <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/5">
+                          <div className="text-slate-400 italic text-sm flex items-center gap-2">
+                            <span className="text-lg">🔒</span> Message hidden
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button 
+                              onClick={() => {
+                                setEditCapsuleId(cap.id);
+                                // Format date to YYYY-MM-DD for the input
+                                const dateObj = new Date(cap.open_on_date);
+                                setEditCapsuleDate(dateObj.toISOString().split('T')[0]);
+                              }} 
+                              className="text-blue-400 hover:text-blue-300 text-xs px-2 py-1 rounded bg-blue-400/10 hover:bg-blue-400/20 transition"
+                            >
+                              Edit Date
+                            </button>
+                            <button 
+                              onClick={() => handleDeleteCapsule(cap.id)} 
+                              className="text-red-400 hover:text-red-300 text-xs px-2 py-1 rounded bg-red-400/10 hover:bg-red-400/20 transition"
+                            >
+                              Delete
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -308,6 +373,7 @@ function Registrations({ token }) {
 
 function CustomStars({ token }) {
   const [stars, setStars] = useState([]);
+  const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({ name: '', ra: '', dec_coord: '', magnitude: '5.0', distance: '100', color: '#ffcc00' });
 
   const fetchStars = async () => {
@@ -319,23 +385,38 @@ function CustomStars({ token }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const res = await fetch('/api/admin/custom-stars', {
-      method: 'POST',
+    const method = editingId ? 'PUT' : 'POST';
+    const url = editingId ? `/api/admin/custom-stars/${editingId}` : '/api/admin/custom-stars';
+    const res = await fetch(url, {
+      method: method,
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({
-        name: form.name,
+        ...form,
         ra: parseFloat(form.ra),
         dec_coord: parseFloat(form.dec_coord),
         magnitude: parseFloat(form.magnitude),
         distance: parseFloat(form.distance),
-        color: form.color,
         spectral_type: 'G'
       })
     });
     if (res.ok) {
       setForm({ name: '', ra: '', dec_coord: '', magnitude: '5.0', distance: '100', color: '#ffcc00' });
+      setEditingId(null);
       fetchStars();
     }
+  };
+
+  const handleEdit = (star) => {
+    setForm({ 
+      name: star.name, 
+      ra: star.ra, 
+      dec_coord: star.dec_coord, 
+      magnitude: star.magnitude, 
+      distance: star.distance, 
+      color: star.color || '#ffcc00'
+    });
+    setEditingId(star.id);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleDelete = async (id) => {
@@ -349,7 +430,7 @@ function CustomStars({ token }) {
       <h2 className="text-2xl font-bold mb-6">Custom Stars</h2>
       
       <div className="bg-slate-800 p-6 rounded-lg border border-slate-700 mb-8">
-        <h3 className="text-lg font-semibold mb-4 text-slate-200">Create New Star</h3>
+        <h3 className="text-lg font-semibold mb-4 text-slate-200">{editingId ? 'Edit Star' : 'Create New Star'}</h3>
         <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm text-slate-400 mb-1">Star Name</label>
@@ -378,8 +459,18 @@ function CustomStars({ token }) {
             <label className="block text-sm text-slate-400 mb-1">Distance (Light Years)</label>
             <input type="number" step="1" required value={form.distance} onChange={e=>setForm({...form, distance: e.target.value})} className="w-full p-2 bg-slate-900 border border-slate-700 rounded text-slate-100" />
           </div>
-          <div className="col-span-2 mt-2">
-            <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-6 rounded transition">Create Star</button>
+          <div className="col-span-2 mt-2 flex gap-4">
+            <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-6 rounded transition">
+              {editingId ? 'Update Star' : 'Create Star'}
+            </button>
+            {editingId && (
+              <button type="button" onClick={() => {
+                setEditingId(null);
+                setForm({ name: '', ra: '', dec_coord: '', magnitude: '5.0', distance: '100', color: '#ffcc00' });
+              }} className="bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-6 rounded transition">
+                Cancel
+              </button>
+            )}
           </div>
         </form>
       </div>
@@ -411,7 +502,10 @@ function CustomStars({ token }) {
                   </div>
                 </td>
                 <td className="p-4 text-right">
-                  <button onClick={() => handleDelete(star.id)} className="text-red-400 hover:text-red-300 text-sm px-2 py-1 rounded bg-red-400/10 hover:bg-red-400/20 transition">Delete</button>
+                  <div className="flex justify-end gap-2">
+                    <button onClick={() => handleEdit(star)} className="text-blue-400 hover:text-blue-300 text-sm px-2 py-1 rounded bg-blue-400/10 hover:bg-blue-400/20 transition">Edit</button>
+                    <button onClick={() => handleDelete(star.id)} className="text-red-400 hover:text-red-300 text-sm px-2 py-1 rounded bg-red-400/10 hover:bg-red-400/20 transition">Delete</button>
+                  </div>
                 </td>
               </tr>
             ))}

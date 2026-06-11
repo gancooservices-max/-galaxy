@@ -1,0 +1,456 @@
+/* =====================================================
+   LUMORA — Mobile Bottom Sheet for Immersive Star UI
+   ===================================================== */
+
+/* ── Hide desktop layout on mobile, show bottom sheet ── */
+@media (max-width: 768px) {
+
+  /* Desktop sidebars hidden on mobile */
+  .immersive-layout {
+    display: none !important;
+  }
+
+  /* The overlay: transparent so 3D canvas shows through */
+  #immersive-star-overlay.open {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    pointer-events: auto;
+    background: transparent;
+  }
+
+  /* Hidden state — both .hidden and when .open is absent */
+  #immersive-star-overlay.hidden,
+  #immersive-star-overlay:not(.open) {
+    display: none !important;
+    pointer-events: none !important;
+  }
+
+  /* Hide bottom sheet when overlay is NOT open */
+  #immersive-star-overlay:not(.open) .mobile-details-sheet {
+    display: none !important;
+  }
+
+  /* ── Single "View All Details" floating button ── */
+  #mob-pull-tab {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1200;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 13px 28px;
+    background: linear-gradient(135deg, rgba(56,189,248,0.18), rgba(15,23,42,0.95));
+    border: 1px solid rgba(56, 189, 248, 0.45);
+    border-radius: 50px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow: 0 4px 30px rgba(0,0,0,0.6), 0 0 0 1px rgba(56,189,248,0.1), 0 0 20px rgba(56,189,248,0.1);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    pointer-events: auto;
+    touch-action: manipulation;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  #mob-pull-tab:active {
+    transform: translateX(-50%) scale(0.95);
+    background: linear-gradient(135deg, rgba(56,189,248,0.3), rgba(15,23,42,0.98));
+  }
+
+  #mob-pull-tab.hidden {
+    display: none !important;
+  }
+
+  /* ── Mobile Zoom Buttons ── */
+  #mob-zoom-controls {
+    position: fixed;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1200;
+    display: none; /* shown via JS when star is tapped */
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: auto;
+  }
+
+  #mob-zoom-in,
+  #mob-zoom-out {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: rgba(8, 14, 32, 0.88);
+    border: 1px solid rgba(56, 189, 248, 0.4);
+    color: #38bdf8;
+    font-size: 22px;
+    font-weight: 300;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    pointer-events: auto;
+    touch-action: manipulation;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5), 0 0 0 1px rgba(56,189,248,0.08);
+    transition: all 0.18s ease;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  #mob-zoom-in:active,
+  #mob-zoom-out:active {
+    background: rgba(56, 189, 248, 0.2);
+    border-color: rgba(56, 189, 248, 0.7);
+    transform: scale(0.9);
+    box-shadow: 0 0 20px rgba(56,189,248,0.3);
+  }
+
+  /* Hide zoom controls when overlay is NOT open */
+  #immersive-star-overlay:not(.open) ~ #mob-zoom-controls {
+    display: none !important;
+  }
+
+  /* ── Journey Timeline (mobile) ── */
+  .mob-journey-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 4px 0;
+  }
+
+  .mob-journey-node {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #94a3b8;
+    font-weight: 500;
+  }
+
+  .mob-journey-active {
+    background: rgba(56,189,248,0.1);
+    border-color: rgba(56,189,248,0.35);
+    color: #38bdf8;
+    font-weight: 700;
+  }
+
+  .mob-journey-arrow {
+    text-align: center;
+    color: rgba(56,189,248,0.4);
+    font-size: 14px;
+    line-height: 1;
+    padding: 2px 0;
+  }
+
+
+  .immersive-header {
+    position: relative;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 0;
+    border: none;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    background: rgba(5, 10, 25, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    z-index: 10;
+    margin: 0;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .immersive-back-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .immersive-star-name {
+    font-size: 17px !important;
+    line-height: 1.2;
+  }
+
+  .immersive-subtitle {
+    font-size: 10px !important;
+    letter-spacing: 1px;
+  }
+
+  /* ── Badges row ── */
+  .immersive-badges {
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 14px;
+    background: rgba(5, 10, 25, 0.9);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    flex-shrink: 0;
+    pointer-events: auto;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .immersive-badge {
+    font-size: 11px;
+    padding: 6px 12px;
+  }
+
+  #imm-live-auth-container {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  #imm-passkey-input {
+    flex: 1;
+    min-width: 120px;
+    font-size: 13px;
+    padding: 8px 10px;
+    border-radius: 8px;
+  }
+
+  #imm-btn-live-galaxy {
+    font-size: 12px;
+    padding: 8px 14px;
+    border-radius: 8px;
+  }
+
+  /* ── Bottom Sheet — fully hidden by default ── */
+  .mobile-details-sheet {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1100;
+    display: flex;
+    flex-direction: column;
+    background: rgba(8, 14, 32, 0.97);
+    border-top: 1px solid rgba(56, 189, 248, 0.2);
+    border-radius: 20px 20px 0 0;
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    box-shadow: 0 -10px 60px rgba(0, 0, 0, 0.6);
+    max-height: 78vh;
+    transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+    transform: translateY(100%); /* fully hidden — star clearly visible */
+    pointer-events: auto;
+  }
+
+  /* When expanded — slides up fully */
+  .mobile-details-sheet.expanded {
+    transform: translateY(0);
+  }
+
+
+  /* Handle bar inside sheet */
+  .mobile-sheet-handle {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 16px 12px;
+    cursor: pointer;
+    flex-shrink: 0;
+    touch-action: manipulation;
+  }
+
+  .mobile-sheet-pill {
+    width: 36px;
+    height: 4px;
+    background: rgba(56, 189, 248, 0.4);
+    border-radius: 2px;
+    transition: background 0.2s;
+  }
+
+  .mobile-sheet-handle:active .mobile-sheet-pill {
+    background: rgba(56, 189, 248, 0.8);
+  }
+
+  .mobile-sheet-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #38bdf8;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: opacity 0.2s;
+  }
+
+  .mobile-details-sheet.expanded .mobile-sheet-label {
+    opacity: 0.6;
+  }
+
+  /* Scrollable content */
+  .mobile-sheet-content {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    flex: 1;
+    padding: 0 14px 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* Section */
+  .mobile-sheet-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .mobile-sheet-title {
+    font-size: 10px;
+    font-weight: 700;
+    color: #38bdf8;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(56, 189, 248, 0.15);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .mobile-sheet-title::before {
+    content: '';
+    display: block;
+    width: 3px;
+    height: 12px;
+    background: #38bdf8;
+    border-radius: 2px;
+  }
+
+  /* Action Buttons grid */
+  .mobile-action-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .mobile-action-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 12px 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    color: #cbd5e1;
+    font-size: 18px;
+    cursor: pointer;
+    min-height: 60px;
+    transition: all 0.2s ease;
+    pointer-events: auto;
+  }
+
+  .mobile-action-btn span {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    color: #94a3b8;
+  }
+
+  .mobile-action-btn:active {
+    background: rgba(56, 189, 248, 0.15);
+    border-color: rgba(56, 189, 248, 0.4);
+    transform: scale(0.96);
+  }
+
+  .mobile-action-full {
+    grid-column: span 2;
+    flex-direction: row;
+    gap: 8px;
+    padding: 14px;
+    background: rgba(56, 189, 248, 0.1);
+    border-color: rgba(56, 189, 248, 0.3);
+    color: #38bdf8;
+    font-size: 16px;
+  }
+
+  .mobile-action-full span {
+    font-size: 13px;
+    color: #38bdf8;
+    font-weight: 600;
+  }
+
+  /* Data grid */
+  .mobile-data-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .mobile-data-item {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+
+  .mobile-data-label {
+    font-size: 9px;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+  }
+
+  .mobile-data-value {
+    font-size: 15px;
+    font-weight: 700;
+    color: #f1f5f9;
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* Story */
+  .mobile-story-text {
+    font-size: 13px;
+    line-height: 1.6;
+    color: #94a3b8;
+    margin: 0;
+  }
+
+  .mobile-story-fact {
+    background: rgba(56, 189, 248, 0.08);
+    border-left: 2px solid #38bdf8;
+    padding: 10px 12px;
+    border-radius: 0 8px 8px 0;
+    font-size: 12px;
+    color: #e2e8f0;
+    margin-top: 8px;
+  }
+}
+
+/* Hide bottom sheet and zoom controls on desktop */
+@media (min-width: 769px) {
+  .mobile-details-sheet {
+    display: none !important;
+  }
+  #mob-zoom-controls {
+    display: none !important;
+  }
+  #mob-pull-tab {
+    display: none !important;
+  }
+}

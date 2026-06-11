@@ -14,6 +14,8 @@
   <link rel="stylesheet" href="./src/style.css" />
   <link rel="stylesheet" href="./src/immersive-star.css" />
   <link rel="stylesheet" href="./src/journey-style.css" />
+  <link rel="stylesheet" href="./src/mobile-responsive.css" />
+  <link rel="stylesheet" href="./src/mobile-sheet.css" />
   <script>
     window.onerror = function(msg, url, lineNo, columnNo, error) {
       const errDiv = document.createElement('div');
@@ -601,15 +603,12 @@
       </div>
     </div>
     
-    <button id="btn-close-registered" style="position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); padding: 12px 35px; background: linear-gradient(180deg, #333 0%, #111 100%); color: #ffd700; border: 1px solid rgba(255,215,0,0.4); border-radius: 30px; font-weight: bold; cursor: pointer; box-shadow: 0 5px 20px rgba(0,0,0,0.8), inset 0 1px 1px rgba(255,255,255,0.1); z-index: 10001; text-transform: uppercase; letter-spacing: 2px; transition: all 0.3s ease;">Close Badge</button>
+    <button id="btn-close-registered" style="position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); padding: 12px 35px; background: linear-gradient(180deg, #333 0%, #111 100%); color: #ffd700; border: 1px solid rgba(255,215,0,0.4); border-radius: 30px; font-weight: bold; cursor: pointer; box-shadow: 0 5px 20px rgba(0,0,0,0.8), inset 0 1px 1px rgba(255,255,255,0.1); z-index: 10001; text-transform: uppercase; letter-spacing: 2px;">Close</button>
   </div>
 
-  <!-- HUD Targeting Layer -->
-  <div id="hud-targeting-layer" class="hud-targeting-layer"></div>
-
-  <!-- Main script -->
-  <!-- Immersive Star Overlay -->
+  <!-- Immersive Star Overlay (hidden by default, shown via .open class when star is clicked) -->
   <div id="immersive-star-overlay" class="hidden">
+    <!-- Sticky header: star name + close -->
     <div class="immersive-header">
       <div class="immersive-back-btn" id="immersive-close-btn">✕</div>
       <div class="immersive-title-group">
@@ -617,7 +616,8 @@
         <span class="immersive-subtitle" id="immersive-star-type">Stellar Object</span>
       </div>
     </div>
-    
+
+    <!-- Register / Auth badges -->
     <div class="immersive-badges" style="display: flex; gap: 10px; align-items: center;">
       <div class="immersive-badge" style="cursor: pointer;" id="imm-btn-register">⭐ Register this Star</div>
       <div id="imm-live-auth-container" class="hidden" style="display: flex; gap: 8px; align-items: center;">
@@ -626,62 +626,158 @@
       </div>
     </div>
 
+    <!-- Desktop layout (hidden on mobile, replaced by bottom sheet) -->
     <div class="immersive-layout">
       <!-- Left Sidebar -->
       <div class="immersive-left-sidebar">
-        <div class="immersive-card immersive-panel">
-          <h3 class="immersive-card-title">Stellar Data</h3>
-          <div class="data-grid">
-            <div class="data-item"><span class="data-label">Star ID</span><span class="data-value" id="imm-data-id">---</span></div>
-            <div class="data-item"><span class="data-label">Distance</span><span class="data-value" id="imm-data-dist">---</span></div>
-            <div class="data-item"><span class="data-label">Temperature</span><span class="data-value" id="imm-data-temp">---</span></div>
-            <div class="data-item"><span class="data-label">Spectral Class</span><span class="data-value" id="imm-data-class">---</span></div>
-            <div class="data-item"><span class="data-label">Mass</span><span class="data-value" id="imm-data-mass">---</span></div>
-            <div class="data-item"><span class="data-label">Radius</span><span class="data-value" id="imm-data-rad">---</span></div>
-            <div class="data-item"><span class="data-label">Luminosity</span><span class="data-value" id="imm-data-lum">---</span></div>
+
+        <!-- Stellar Data Card -->
+        <div class="immersive-card immersive-panel imm-collapsible" id="card-stellar">
+          <div class="imm-card-header" data-target="body-stellar">
+            <h3 class="immersive-card-title">Stellar Data</h3>
+            <button class="imm-toggle-btn" id="toggle-stellar" title="Hide Stellar Data">▼</button>
+          </div>
+          <div class="imm-card-body" id="body-stellar">
+            <div class="data-grid">
+              <div class="data-item"><span class="data-label">Star ID</span><span class="data-value" id="imm-data-id">---</span></div>
+              <div class="data-item"><span class="data-label">Distance</span><span class="data-value" id="imm-data-dist">---</span></div>
+              <div class="data-item"><span class="data-label">Temperature</span><span class="data-value" id="imm-data-temp">---</span></div>
+              <div class="data-item"><span class="data-label">Spectral Class</span><span class="data-value" id="imm-data-class">---</span></div>
+              <div class="data-item"><span class="data-label">Mass</span><span class="data-value" id="imm-data-mass">---</span></div>
+              <div class="data-item"><span class="data-label">Radius</span><span class="data-value" id="imm-data-rad">---</span></div>
+              <div class="data-item"><span class="data-label">Luminosity</span><span class="data-value" id="imm-data-lum">---</span></div>
+            </div>
           </div>
         </div>
-        
-        <div class="immersive-card immersive-panel">
-          <h3 class="immersive-card-title">Position Journey</h3>
-          <div class="journey-timeline">
-            <div class="journey-line"></div>
-            <div class="journey-node">Earth</div>
-            <div class="journey-node">Solar System</div>
-            <div class="journey-node">Milky Way Galaxy</div>
-            <div class="journey-node active">Selected Star</div>
+
+        <!-- Position Journey Card -->
+        <div class="immersive-card immersive-panel imm-collapsible" id="card-journey">
+          <div class="imm-card-header" data-target="body-journey">
+            <h3 class="immersive-card-title">Position Journey</h3>
+            <button class="imm-toggle-btn" id="toggle-journey" title="Hide Position Journey">▼</button>
+          </div>
+          <div class="imm-card-body" id="body-journey">
+            <div class="journey-timeline">
+              <div class="journey-line"></div>
+              <div class="journey-node">Earth</div>
+              <div class="journey-node">Solar System</div>
+              <div class="journey-node">Milky Way Galaxy</div>
+              <div class="journey-node active">Selected Star</div>
+            </div>
           </div>
         </div>
+
       </div>
 
       <!-- Center Hero -->
-      <div class="immersive-hero-viewport">
-      </div>
+      <div class="immersive-hero-viewport"></div>
 
       <!-- Right Sidebar -->
       <div class="immersive-right-sidebar">
-        <div class="immersive-card immersive-panel" style="flex: 1;">
-          <h3 class="immersive-card-title">Story & Meaning</h3>
-          <div style="margin-top: 10px;">
+
+        <!-- Story & Meaning Card -->
+        <div class="immersive-card immersive-panel imm-collapsible" id="card-story" style="flex: 1;">
+          <div class="imm-card-header" data-target="body-story">
+            <h3 class="immersive-card-title">Story &amp; Meaning</h3>
+            <button class="imm-toggle-btn" id="toggle-story" title="Hide Story">▼</button>
+          </div>
+          <div class="imm-card-body" id="body-story">
             <p class="story-text" id="imm-story-text">Loading...</p>
             <div class="story-fact" id="imm-story-fact">Loading...</div>
           </div>
         </div>
 
-        <!-- Buttons Panel -->
-        <div class="immersive-card immersive-panel action-buttons-container">
-          <h3 class="immersive-card-title">Actions</h3>
-          <div class="action-buttons-grid">
-            <button class="hero-btn action-btn-sm" id="imm-btn-rotate">⟳ Auto Rotate</button>
-            <button class="hero-btn action-btn-sm" id="imm-btn-reset">↺ Reset View</button>
-            <button class="hero-btn action-btn-sm" id="imm-btn-fly">🚀 Fly To Star</button>
-            <button class="hero-btn action-btn-sm" id="imm-btn-explode">💥 Explode Star</button>
-            <button class="hero-btn action-btn-sm" id="imm-btn-comet" style="color: #ccc; grid-column: span 2; opacity: 0.4; pointer-events: none;">🔒 Cinematic Comet</button>
+        <!-- Actions Card -->
+        <div class="immersive-card immersive-panel action-buttons-container imm-collapsible" id="card-actions">
+          <div class="imm-card-header" data-target="body-actions">
+            <h3 class="immersive-card-title">Actions</h3>
+            <button class="imm-toggle-btn" id="toggle-actions" title="Hide Actions">▼</button>
+          </div>
+          <div class="imm-card-body" id="body-actions">
+            <div class="action-buttons-grid">
+              <button class="hero-btn action-btn-sm" id="imm-btn-rotate">⟳ Auto Rotate</button>
+              <button class="hero-btn action-btn-sm" id="imm-btn-reset">↺ Reset View</button>
+              <button class="hero-btn action-btn-sm" id="imm-btn-fly" style="display:none;">🚀 Fly To Star</button>
+              <button class="hero-btn action-btn-sm" id="imm-btn-explode">💥 Explode Star</button>
+              <button class="hero-btn action-btn-sm" id="imm-btn-comet" style="color:#ccc;grid-column:span 2;opacity:0.4;pointer-events:none;">🔒 Cinematic Comet</button>
+            </div>
           </div>
         </div>
+
       </div>
     </div>
-  </div>
+
+    <!-- ── MOBILE: Zoom Buttons (right side, always visible when overlay open) ── -->
+    <div id="mob-zoom-controls">
+      <button id="mob-zoom-in"  title="Zoom In">+</button>
+      <button id="mob-zoom-out" title="Zoom Out">−</button>
+    </div>
+
+    <!-- ── MOBILE: Single floating "View Details" button ── -->
+    <button id="mob-pull-tab">☰ &nbsp;View All Details</button>
+
+    <!-- ── MOBILE BOTTOM SHEET (all sections in one place) ── -->
+    <div class="mobile-details-sheet" id="mobile-details-sheet">
+
+      <!-- Handle — tap to close sheet -->
+      <div class="mobile-sheet-handle" id="mobile-sheet-toggle">
+        <div class="mobile-sheet-pill"></div>
+        <span class="mobile-sheet-label">↓ Close Details</span>
+      </div>
+
+      <!-- Scrollable content -->
+      <div class="mobile-sheet-content">
+
+        <!-- Actions -->
+        <div class="mobile-sheet-section">
+          <div class="mobile-sheet-title">⚡ Actions</div>
+          <div class="mobile-action-grid">
+            <button class="mobile-action-btn" id="mob-btn-rotate">⟳<span>Auto Rotate</span></button>
+            <button class="mobile-action-btn" id="mob-btn-reset">↺<span>Reset View</span></button>
+            <button class="mobile-action-btn" id="mob-btn-explode">💥<span>Explode Star</span></button>
+            <button class="mobile-action-btn" id="mob-btn-comet" style="opacity:0.4;pointer-events:none;">🔒<span>Comet</span></button>
+            <button class="mobile-action-btn mobile-action-full" id="mob-btn-fly" style="display:none;">🚀 <span>Fly To Star</span></button>
+          </div>
+        </div>
+
+        <!-- Stellar Data -->
+        <div class="mobile-sheet-section">
+          <div class="mobile-sheet-title">🌟 Stellar Data</div>
+          <div class="mobile-data-grid">
+            <div class="mobile-data-item"><span class="mobile-data-label">Star ID</span><span class="mobile-data-value" id="mob-data-id">---</span></div>
+            <div class="mobile-data-item"><span class="mobile-data-label">Distance</span><span class="mobile-data-value" id="mob-data-dist">---</span></div>
+            <div class="mobile-data-item"><span class="mobile-data-label">Temperature</span><span class="mobile-data-value" id="mob-data-temp">---</span></div>
+            <div class="mobile-data-item"><span class="mobile-data-label">Spectral</span><span class="mobile-data-value" id="mob-data-class">---</span></div>
+            <div class="mobile-data-item"><span class="mobile-data-label">Mass</span><span class="mobile-data-value" id="mob-data-mass">---</span></div>
+            <div class="mobile-data-item"><span class="mobile-data-label">Radius</span><span class="mobile-data-value" id="mob-data-rad">---</span></div>
+            <div class="mobile-data-item"><span class="mobile-data-label">Luminosity</span><span class="mobile-data-value" id="mob-data-lum">---</span></div>
+          </div>
+        </div>
+
+        <!-- Position Journey -->
+        <div class="mobile-sheet-section">
+          <div class="mobile-sheet-title">🗺️ Position Journey</div>
+          <div class="mob-journey-timeline">
+            <div class="mob-journey-node">🌍 Earth</div>
+            <div class="mob-journey-arrow">↓</div>
+            <div class="mob-journey-node">☀️ Solar System</div>
+            <div class="mob-journey-arrow">↓</div>
+            <div class="mob-journey-node">🌌 Milky Way Galaxy</div>
+            <div class="mob-journey-arrow">↓</div>
+            <div class="mob-journey-node mob-journey-active">⭐ Selected Star</div>
+          </div>
+        </div>
+
+        <!-- Story & Meaning -->
+        <div class="mobile-sheet-section">
+          <div class="mobile-sheet-title">📖 Story &amp; Meaning</div>
+          <p class="mobile-story-text" id="mob-story-text">Loading...</p>
+          <div class="mobile-story-fact" id="mob-story-fact">Loading...</div>
+        </div>
+
+      </div>
+    </div>
+
 
   <script type="module" src="/src/main.js"></script>
 </body>

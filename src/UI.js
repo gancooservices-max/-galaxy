@@ -345,6 +345,7 @@ export class UI {
 
     if (immRegBtn && immAuthCon) {
       const immBtnComet = document.getElementById('imm-btn-comet');
+      const immBtnFly = document.getElementById('imm-btn-fly');
       const reg = this.registeredStars && this.registeredStars[star.id];
       if (reg) {
         immRegBtn.textContent = '⭐ Premium Star (Owned)';
@@ -354,7 +355,9 @@ export class UI {
         immRegBtn.style.cursor = 'pointer';
 
         if (this.authorizedStars && this.authorizedStars[star.id]) {
+          // Secret key verified — show Fly To Star & Cinematic Comet
           immAuthCon.classList.add('hidden');
+          if (immBtnFly) immBtnFly.style.display = '';
           if (immBtnComet) {
             immBtnComet.style.opacity = '1';
             immBtnComet.style.pointerEvents = 'auto';
@@ -362,7 +365,9 @@ export class UI {
             immBtnComet.style.color = '#FFD700';
           }
         } else {
+          // Star is registered but key not yet verified — hide Fly To Star
           immAuthCon.classList.remove('hidden');
+          if (immBtnFly) immBtnFly.style.display = 'none';
           if (immBtnComet) {
             immBtnComet.style.opacity = '0.4';
             immBtnComet.style.pointerEvents = 'none';
@@ -371,11 +376,13 @@ export class UI {
           }
         }
       } else {
+        // Star is not registered — hide Fly To Star button
         immRegBtn.textContent = '⭐ Register this Star';
         immRegBtn.style.background = 'linear-gradient(45deg, #ffd700, #ffa500)';
         immRegBtn.style.color = '#000';
         immRegBtn.style.pointerEvents = 'auto';
         immAuthCon.classList.add('hidden');
+        if (immBtnFly) immBtnFly.style.display = 'none';
         if (immBtnComet) {
           immBtnComet.style.opacity = '0.4';
           immBtnComet.style.pointerEvents = 'none';
@@ -403,6 +410,10 @@ export class UI {
               this.authorizedStars[this.immersiveUI.activeStar.id] = true;
               immAuthCon.classList.add('hidden');
               
+              // Show Fly To Star button now that user is verified
+              const immBtnFly = document.getElementById('imm-btn-fly');
+              if (immBtnFly) immBtnFly.style.display = '';
+
               const immBtnComet = document.getElementById('imm-btn-comet');
               if (immBtnComet) {
                 immBtnComet.style.opacity = '1';
@@ -411,7 +422,7 @@ export class UI {
                 immBtnComet.style.color = '#FFD700';
               }
               
-              alert("Access Granted! Live to Galaxy connection established. Cinematic Comet unlocked!");
+              alert("Access Granted! Fly To Star & Cinematic Comet unlocked!");
             } else {
               alert("Invalid Secret Key!");
             }
