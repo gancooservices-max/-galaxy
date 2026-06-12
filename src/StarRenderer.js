@@ -375,9 +375,9 @@ export class StarRenderer {
     this.scene.fog = new THREE.FogExp2(0x010206, 0.00000015);
     
     // Deep space gradient background sphere
-    const bgGeo = new THREE.SphereGeometry(5000000, 32, 32);
+    const bgGeo = new THREE.SphereGeometry(20000000, 32, 32);
     const bgMat = new THREE.ShaderMaterial({
-      side: THREE.BackSide,
+      side: THREE.DoubleSide,
       depthWrite: false,
       uniforms: {},
       vertexShader: `
@@ -408,7 +408,7 @@ export class StarRenderer {
 
   _createCamera() {
     const aspect = window.innerWidth / window.innerHeight;
-    this.camera = new THREE.PerspectiveCamera(70, aspect, 0.0001, 10000000);
+    this.camera = new THREE.PerspectiveCamera(70, aspect, 0.0001, 50000000);
     this.camera.position.set(0, 180000, 280000);
     
     // Add a dim headlight to the spaceship so planets aren't completely pitch black on their dark sides
@@ -680,11 +680,12 @@ export class StarRenderer {
   }
 
   _createMilkyWay() {
-    const geo = new THREE.SphereGeometry(4500000, 64, 64);
+    const geo = new THREE.SphereGeometry(15000000, 64, 64);
     const mat = new THREE.ShaderMaterial({
       uniforms: {
         uCameraPos: { value: new THREE.Vector3() },
-        uTime:      { value: 0.0 }
+        uTime:      { value: 0.0 },
+        uOpacity:   { value: 0.0 }
       },
       vertexShader: `
         varying vec3 vWorldPosition;
@@ -698,6 +699,7 @@ export class StarRenderer {
         varying vec3 vWorldPosition;
         uniform vec3 uCameraPos;
         uniform float uTime;
+        uniform float uOpacity;
         
         float hash(vec3 p) {
             p = fract(p * 0.3183099 + .1);
@@ -742,11 +744,10 @@ export class StarRenderer {
           float cloud3 = smoothstep(0.55, 0.95, n3);
           
           // Colors matching the user's target image (Deep dark blue, cyan, and black)
-          // Increased brightness significantly so the effect is actually visible!
-          vec3 voidColor  = vec3(0.00, 0.00, 0.01); 
-          vec3 cloudBlue  = vec3(0.04, 0.12, 0.22);  // Rich dark blue/grey clouds
-          vec3 cloudCyan  = vec3(0.02, 0.18, 0.35);  // Subtle cyan highlights
-          vec3 faintGlow  = vec3(0.08, 0.12, 0.16);  // Faint greyish blue
+          vec3 voidColor  = vec3(0.00, 0.00, 0.00); 
+          vec3 cloudBlue  = vec3(0.1, 0.3, 0.6);  // Rich dark blue/grey clouds
+          vec3 cloudCyan  = vec3(0.1, 0.5, 0.8);  // Subtle cyan highlights
+          vec3 faintGlow  = vec3(0.2, 0.3, 0.4);  // Faint greyish blue
           
           vec3 finalColor = voidColor;
           finalColor = mix(finalColor, cloudBlue, cloud1);
@@ -757,10 +758,12 @@ export class StarRenderer {
           float darkVoid = fbm(dir * 1.8 - vec3(1.0, 2.0, 3.0));
           finalColor *= smoothstep(0.1, 0.9, darkVoid);
           
-          gl_FragColor = vec4(finalColor, 1.0);
+          gl_FragColor = vec4(finalColor * uOpacity, 1.0);
         }
       `,
-      side: THREE.BackSide,
+      side: THREE.DoubleSide,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
       depthWrite: false
     });
     this.milkyWaySphere = new THREE.Mesh(geo, mat);
@@ -5924,6 +5927,10 @@ CSS (TIANGONG)
       if (this.milkyWaySphere && this.milkyWaySphere.material.uniforms) {
         this.milkyWaySphere.material.uniforms.uTime.value = elapsed;
         this.milkyWaySphere.material.uniforms.uCameraPos.value.copy(this.camera.position);
+        let dist = this.controls ? this.controls.getDistance() : this.camera.position.length();
+        // Start fading in early so it's fully visible at 50,000 distance
+        let opacity = THREE.MathUtils.clamp((dist - 1000.0) / 49000.0, 0.0, 1.0);
+        this.milkyWaySphere.material.uniforms.uOpacity.value = opacity;
       }
       if (this.nebulaSphere && this.nebulaSphere.material.uniforms) {
         this.nebulaSphere.material.uniforms.uTime.value = elapsed;
